@@ -1,0 +1,17 @@
+{
+  "name": "Offline Companion",
+  "short_name": "Offline AI",
+  "description": "A private AI assistant and journal that runs entirely on your device.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
