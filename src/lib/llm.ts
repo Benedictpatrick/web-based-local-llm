@@ -1,4 +1,5 @@
 import { Wllama, type ChatCompletionMessage } from "@wllama/wllama/esm/index.js";
+import type { MLCEngine } from "@mlc-ai/web-llm";
 
 export const AVAILABLE_MODELS = [
   {
@@ -6,30 +7,63 @@ export const AVAILABLE_MODELS = [
     label: "Qwen2.5 0.5B (fastest, ~0.5GB)",
     repo: "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
     file: "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    mlcId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
   },
   {
     id: "qwen2.5-1.5b",
     label: "Qwen2.5 1.5B (balanced, ~1GB)",
     repo: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
     file: "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+    mlcId: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
   },
   {
     id: "qwen2.5-3b",
     label: "Qwen2.5 3B (better quality, ~2GB)",
     repo: "Qwen/Qwen2.5-3B-Instruct-GGUF",
     file: "qwen2.5-3b-instruct-q4_k_m.gguf",
+    mlcId: "Qwen2.5-3B-Instruct-q4f16_1-MLC",
   },
 ] as const;
 
 export type ModelId = (typeof AVAILABLE_MODELS)[number]["id"];
+export type ProgressInfo = { loaded: number; total: number; text?: string };
 
+// wllama (CPU/WASM) state — always available as the universal fallback.
 let wllama: Wllama | null = null;
+let wllamaLoadingPromise: Promise<Wllama> | null = null;
+let lastWasmTimings: { predicted_per_second?: number } | null = null;
+
+// web-llm (WebGPU) state — used only on devices with a real GPU adapter.
+let webllmEngine: MLCEngine | null = null;
+let webllmLoadingPromise: Promise<MLCEngine> | null = null;
+let lastWebgpuTokPerSec: number | null = null;
+
 let loadedModelId: ModelId | null = null;
-let loadingPromise: Promise<Wllama> | null = null;
-let lastTimings: { predicted_per_second?: number } | null = null;
+let engineKind: "webgpu" | "wasm" | null = null;
+let webGpuAvailablePromise: Promise<boolean> | null = null;
 
 export function isWasmSupported(): boolean {
   return typeof WebAssembly !== "undefined";
+}
+
+async function hasWebGpu(): Promise<boolean> {
+  if (webGpuAvailablePromise) return webGpuAvailablePromise;
+  webGpuAvailablePromise = (async () => {
+    if (typeof navigator === "undefined" || !("gpu" in navigator)) return false;
+    try {
+      // A returned adapter (even a "fallback" one, per the spec) means the
+      // browser can actually initialize WebGPU here — the field to avoid is
+      // adapter.info.isFallbackAdapter, which moved locations across Chrome
+      // versions and isn't worth trusting for a simple go/no-go check.
+      const adapter = await (
+        navigator as unknown as { gpu: { requestAdapter: () => Promise<unknown | null> } }
+      ).gpu.requestAdapter();
+      return !!adapter;
+    } catch {
+      return false;
+    }
+  })();
+  return webGpuAvailablePromise;
 }
 
 export async function isStoragePersisted(): Promise<boolean | null> {
@@ -45,34 +79,83 @@ export async function isStoragePersisted(): Promise<boolean | null> {
 
 export async function loadEngine(
   modelId: ModelId,
-  onProgress?: (progress: { loaded: number; total: number }) => void
-): Promise<Wllama> {
-  if (wllama && loadedModelId === modelId) {
-    return wllama;
-  }
-
-  if (loadingPromise) {
-    return loadingPromise;
-  }
-
+  onProgress?: (progress: ProgressInfo) => void
+): Promise<void> {
   const model = AVAILABLE_MODELS.find((m) => m.id === modelId);
   if (!model) throw new Error(`Unknown model: ${modelId}`);
 
-  // Without this, the model file is written to browser storage as
-  // "best-effort" — Chrome (especially on phones with limited space) can
-  // silently evict it between sessions, causing a full re-download every
-  // time even though nothing actually failed. This requests a durable grant
-  // instead. Chrome is far more likely to grant it for an installed PWA /
-  // bookmarked site than a plain one-off tab.
   if (typeof navigator !== "undefined" && navigator.storage?.persist) {
     navigator.storage.persist().catch(() => {});
   }
 
-  loadingPromise = (async () => {
+  if (engineKind === null) {
+    engineKind = (await hasWebGpu()) ? "webgpu" : "wasm";
+  }
+
+  if (engineKind === "webgpu") {
+    try {
+      await loadWebgpuEngine(model.mlcId, onProgress);
+      loadedModelId = modelId;
+      return;
+    } catch (err) {
+      // A real adapter existing doesn't guarantee the model actually runs
+      // on it (shader-compile OOM, driver quirks, etc.) — fall back to the
+      // universal CPU path rather than leaving the device stuck.
+      console.error("WebGPU engine failed, falling back to CPU/WASM:", err);
+      engineKind = "wasm";
+    }
+  }
+
+  await loadWasmEngine(model, onProgress);
+  loadedModelId = modelId;
+}
+
+async function loadWebgpuEngine(
+  mlcId: string,
+  onProgress?: (progress: ProgressInfo) => void
+): Promise<MLCEngine> {
+  if (webllmEngine) {
+    await webllmEngine.unload().catch(() => {});
+    webllmEngine = null;
+  }
+  if (webllmLoadingPromise) return webllmLoadingPromise;
+
+  webllmLoadingPromise = (async () => {
+    const webllm = await import("@mlc-ai/web-llm");
+    const engine = await webllm.CreateMLCEngine(mlcId, {
+      initProgressCallback: onProgress
+        ? (report) =>
+            onProgress({
+              loaded: Math.round(report.progress * 1000),
+              total: 1000,
+              text: report.text,
+            })
+        : undefined,
+    });
+    webllmEngine = engine;
+    webllmLoadingPromise = null;
+    return engine;
+  })();
+
+  return webllmLoadingPromise;
+}
+
+async function loadWasmEngine(
+  model: (typeof AVAILABLE_MODELS)[number],
+  onProgress?: (progress: ProgressInfo) => void
+): Promise<Wllama> {
+  if (wllama && loadedModelId === model.id) {
+    return wllama;
+  }
+
+  if (wllamaLoadingPromise) {
+    return wllamaLoadingPromise;
+  }
+
+  wllamaLoadingPromise = (async () => {
     if (wllama) {
       await wllama.exit().catch(() => {});
       wllama = null;
-      loadedModelId = null;
     }
 
     const instance = new Wllama(
@@ -134,24 +217,67 @@ export async function loadEngine(
     }
 
     wllama = instance;
-    loadedModelId = modelId;
-    loadingPromise = null;
+    wllamaLoadingPromise = null;
     return instance;
   })();
 
-  return loadingPromise;
+  return wllamaLoadingPromise;
 }
 
 export function getLoadedModelId(): ModelId | null {
   return loadedModelId;
 }
 
+export function getEngineKind(): "webgpu" | "wasm" | null {
+  return engineKind;
+}
+
 export function getLastStatsText(): string | null {
-  if (!lastTimings?.predicted_per_second) return null;
-  return `${lastTimings.predicted_per_second.toFixed(1)} tokens/sec`;
+  if (engineKind === "webgpu") {
+    if (!lastWebgpuTokPerSec) return null;
+    return `${lastWebgpuTokPerSec.toFixed(1)} tokens/sec (GPU)`;
+  }
+  if (!lastWasmTimings?.predicted_per_second) return null;
+  return `${lastWasmTimings.predicted_per_second.toFixed(1)} tokens/sec`;
 }
 
 export async function* streamChat(
+  messages: ChatCompletionMessage[]
+): AsyncGenerator<string> {
+  if (engineKind === "webgpu") {
+    yield* streamWebgpuChat(messages);
+    return;
+  }
+  yield* streamWasmChat(messages);
+}
+
+async function* streamWebgpuChat(
+  messages: ChatCompletionMessage[]
+): AsyncGenerator<string> {
+  if (!webllmEngine) {
+    throw new Error("Engine not loaded yet");
+  }
+
+  const result = await webllmEngine.chat.completions.create({
+    messages: messages as never,
+    stream: true,
+    stream_options: { include_usage: true },
+    max_tokens: 150,
+    temperature: 0.7,
+    top_p: 0.9,
+  });
+
+  for await (const chunk of result) {
+    const usage = chunk.usage as { extra?: { decode_tokens_per_s?: number } } | undefined;
+    if (usage?.extra?.decode_tokens_per_s) {
+      lastWebgpuTokPerSec = usage.extra.decode_tokens_per_s;
+    }
+    const delta = chunk.choices[0]?.delta?.content;
+    if (delta) yield delta;
+  }
+}
+
+async function* streamWasmChat(
   messages: ChatCompletionMessage[]
 ): AsyncGenerator<string> {
   if (!wllama) {
@@ -176,7 +302,7 @@ export async function* streamChat(
   });
 
   for await (const chunk of result) {
-    if (chunk.timings) lastTimings = chunk.timings;
+    if (chunk.timings) lastWasmTimings = chunk.timings;
     const delta = chunk.choices[0]?.delta?.content;
     if (delta) yield delta;
   }

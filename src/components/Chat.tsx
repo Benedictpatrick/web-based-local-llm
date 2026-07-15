@@ -56,8 +56,12 @@ export default function Chat() {
     const startedAt = performance.now();
     let sawPartialProgress = false;
     try {
-      await loadEngine(modelId, ({ loaded, total }) => {
+      await loadEngine(modelId, ({ loaded, total, text }) => {
         if (loaded < total) sawPartialProgress = true;
+        if (text) {
+          setProgress(text);
+          return;
+        }
         const pct = total > 0 ? Math.round((loaded / total) * 100) : 0;
         const mb = (n: number) => (n / (1024 * 1024)).toFixed(0);
         setProgress(`Downloading model… ${pct}% (${mb(loaded)} / ${mb(total)} MB)`);
