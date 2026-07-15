@@ -80,6 +80,17 @@ export async function loadEngine(
       { allowOffline: true }
     );
 
+    // wllama's multi-thread startup speculatively tries to allocate a large
+    // (up to 4GB) SharedArrayBuffer-backed WASM memory block, stepping down
+    // in ~128MB increments until one succeeds. On a desktop with plenty of
+    // RAM that's a non-issue; on a phone it can plausibly thrash the whole
+    // device, not just this tab, while it works through failing attempts —
+    // a very plausible cause of "lagging everywhere, not just generation".
+    // Force single-thread on mobile to skip that path entirely: slower
+    // tokens/sec, but avoids that memory-pressure cliff.
+    const isMobile =
+      typeof navigator !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
+
     const loadParams = {
       // Smaller context = smaller KV-cache allocation up front. On a
       // memory-constrained phone (often a few hundred MB per tab), a
@@ -87,6 +98,7 @@ export async function loadEngine(
       // tab kills, not just a theoretical concern — 2048 is still
       // plenty for a short chat/journal conversation.
       n_ctx: 2048,
+      n_threads: isMobile ? 1 : undefined,
       progressCallback: onProgress
         ? ({ loaded, total }: { loaded: number; total: number }) =>
             onProgress({ loaded, total })
