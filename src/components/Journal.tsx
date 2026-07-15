@@ -36,7 +36,7 @@ export default function Journal() {
           />
           <div className="flex justify-end">
             <button
-              className="rounded-full bg-foreground px-4 py-1.5 text-sm font-medium text-background transition-opacity disabled:opacity-30"
+              className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-30"
               onClick={handleAdd}
               disabled={!draft.trim()}
             >

@@ -13,6 +13,7 @@ import {
   streamChat,
 } from "@/lib/llm";
 import { topRelevantEntries } from "@/lib/retrieval";
+import ModelPicker from "@/components/ModelPicker";
 
 const SYSTEM_PROMPT =
   "You are a private, on-device assistant running entirely offline — nothing the user says ever leaves this browser. Keep replies short: 1-3 sentences unless the user clearly asks for more detail or a list. Answer directly first, then stop — do not pad, repeat yourself, or restate the question. When journal context is provided, use it naturally to personalize your answer, but don't mention that you were 'given context' unless asked.";
@@ -28,16 +29,12 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [draftReply, setDraftReply] = useState("");
-  const [wasmSupported, setWasmSupported] = useState(true);
+  const [wasmSupported] = useState(() => isWasmSupported());
   const [lastStats, setLastStats] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pendingReplyRef = useRef<string>("");
   const flushScheduledRef = useRef(false);
-
-  useEffect(() => {
-    setWasmSupported(isWasmSupported());
-  }, []);
 
   useEffect(() => {
     // "smooth" stacks a new scroll animation on every token during a slow
@@ -159,20 +156,13 @@ export default function Chat() {
       ) : (
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-3 py-4 sm:px-5">
           <div className="flex items-center gap-2">
-            <select
-              className="min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none"
+            <ModelPicker
               value={modelId}
+              onChange={setModelId}
               disabled={status === "loading"}
-              onChange={(e) => setModelId(e.target.value as ModelId)}
-            >
-              {AVAILABLE_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
+            />
             <button
-              className="shrink-0 rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               onClick={handleLoadModel}
               disabled={status === "loading"}
             >
@@ -263,7 +253,7 @@ export default function Chat() {
             />
             <button
               aria-label="Send"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-opacity disabled:opacity-30"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-30"
               onClick={handleSend}
               disabled={status !== "ready" || streaming || !input.trim()}
             >
