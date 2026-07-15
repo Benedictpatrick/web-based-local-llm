@@ -97,7 +97,14 @@ export async function loadEngine(
       // large reserved allocation is a real source of slowdowns and
       // tab kills, not just a theoretical concern — 2048 is still
       // plenty for a short chat/journal conversation.
-      n_ctx: 2048,
+      n_ctx: isMobile ? 1024 : 2048,
+      // llama.cpp's default n_batch (2048) sizes the compute buffer as
+      // n_batch * vocab_size; Qwen2.5's vocab is ~152k tokens, so the
+      // default alone reserves close to 1GB just for that buffer. That's
+      // a strong candidate for the WASM memory-growth abort ("(ABORT)")
+      // seen on phones — cut it down hard on mobile since a chat prompt
+      // doesn't need a large batch anyway.
+      n_batch: isMobile ? 128 : undefined,
       n_threads: isMobile ? 1 : undefined,
       progressCallback: onProgress
         ? ({ loaded, total }: { loaded: number; total: number }) =>
