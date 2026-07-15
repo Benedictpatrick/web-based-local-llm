@@ -105,6 +105,11 @@ export async function loadEngine(
       // seen on phones — cut it down hard on mobile since a chat prompt
       // doesn't need a large batch anyway.
       n_batch: isMobile ? 128 : undefined,
+      // Tested 2-thread mode here (n_batch capped, so the earlier OOM
+      // theory didn't apply): it hung for 60+s on a simple 3-sentence
+      // prompt on a desktop with plenty of RAM/cores, vs ~13s total on
+      // single-thread. That's a real deadlock in this build's pthread
+      // sync path, not a speed tradeoff — keep single-thread on mobile.
       n_threads: isMobile ? 1 : undefined,
       progressCallback: onProgress
         ? ({ loaded, total }: { loaded: number; total: number }) =>
