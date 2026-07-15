@@ -138,11 +138,23 @@ export default function Chat() {
 
     // Sending the full history means prefill cost (and thus lag) grows with
     // every message, and can eventually overflow the context window. Cap it
-    // to the most recent turns — plenty for coherent replies in a chat app.
-    const MAX_HISTORY_MESSAGES = 12;
+    // to the most recent turns. Also: a system-prompt-only instruction to
+    // "follow the latest message" gets diluted by a long history for a
+    // small model — it kept continuing an earlier topic (e.g. replying
+    // about linked lists to an unrelated "give a discussion topic" ask)
+    // even with that instruction in place. A short history plus a
+    // reminder placed directly next to the actual question (where small
+    // models attend much more strongly) is more reliable than either
+    // alone.
+    const MAX_HISTORY_MESSAGES = 6;
     const history = (await db.chat.orderBy("createdAt").toArray())
       .slice(-MAX_HISTORY_MESSAGES)
       .map((m): ChatCompletionMessage => ({ role: m.role, content: m.content }));
+
+    const lastMessage = history[history.length - 1];
+    if (lastMessage?.role === "user") {
+      lastMessage.content = `${lastMessage.content}\n\n(Respond to this specific message. If it's unrelated to earlier messages in this conversation, address it as a new topic rather than continuing the previous one.)`;
+    }
 
     const promptMessages: ChatCompletionMessage[] = [
       { role: "system", content: SYSTEM_PROMPT + (contextBlock ? `\n\n${contextBlock}` : "") },
