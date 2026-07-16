@@ -65,3 +65,22 @@ body {
 .msg-enter {
   animation: fade-in-up 0.2s ease-out;
 }
+
+@keyframes shimmer-slide {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 150% 0;
+  }
+}
+
+/* Indeterminate progress fill for LoadingScreen: used only while the engine
+   reports text status instead of byte counts, so there's no real percentage
+   to show yet. */
+.loading-shimmer {
+  background-image: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 60% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer-slide 1.2s ease-in-out infinite;
+}
