@@ -50,8 +50,21 @@ const MessageHistory = memo(function MessageHistory({
 const SYSTEM_PROMPT =
   "You are a private, on-device assistant running entirely offline — nothing the user says ever leaves this browser. Keep replies short: 1-3 sentences unless the user clearly asks for more detail or a list. Answer directly first, then stop — do not pad, repeat yourself, or restate the question. Always respond to the user's most recent message specifically — if it changes topic or asks something unrelated to earlier turns, address the new request directly instead of continuing the previous subject. When journal context is provided, use it naturally to personalize your answer, but don't mention that you were 'given context' unless asked.";
 
-export default function Chat() {
-  const messages = useLiveQuery(() => db.chat.orderBy("createdAt").toArray(), [], []);
+export default function Chat({
+  conversationId,
+  onConversationChange,
+}: {
+  conversationId: number | null;
+  onConversationChange: (id: number) => void;
+}) {
+  const messages = useLiveQuery(
+    () =>
+      conversationId
+        ? db.chat.where("conversationId").equals(conversationId).sortBy("createdAt")
+        : Promise.resolve<ChatMessage[]>([]),
+    [conversationId],
+    [] as ChatMessage[]
+  );
   const journalEntries = useLiveQuery(() => db.journal.orderBy("createdAt").toArray(), [], []);
 
   const [modelId, setModelId] = useState<ModelId>(AVAILABLE_MODELS[0].id);
@@ -121,7 +134,27 @@ export default function Chat() {
     if (!text || streaming || status !== "ready") return;
 
     setInput("");
-    await db.chat.add({ role: "user", content: text, createdAt: Date.now() });
+
+    let activeConversationId = conversationId;
+    if (!activeConversationId) {
+      // First message of a fresh chat — create its conversation now (not
+      // eagerly on "New chat") so switching to a blank chat and back out
+      // without typing anything doesn't leave clutter in the history list.
+      const now = Date.now();
+      activeConversationId = await db.conversations.add({
+        title: text.slice(0, 60),
+        createdAt: now,
+        updatedAt: now,
+      });
+      onConversationChange(activeConversationId);
+    }
+
+    await db.chat.add({
+      conversationId: activeConversationId,
+      role: "user",
+      content: text,
+      createdAt: Date.now(),
+    });
 
     const relevant = topRelevantEntries(text, journalEntries ?? [], 3);
     const contextBlock =
@@ -142,7 +175,9 @@ export default function Chat() {
     // models attend much more strongly) is more reliable than either
     // alone.
     const MAX_HISTORY_MESSAGES = 6;
-    const history = (await db.chat.orderBy("createdAt").toArray())
+    const history = (
+      await db.chat.where("conversationId").equals(activeConversationId).sortBy("createdAt")
+    )
       .slice(-MAX_HISTORY_MESSAGES)
       .map((m): ChatCompletionMessage => ({ role: m.role, content: m.content }));
 
@@ -182,7 +217,13 @@ export default function Chat() {
       full = full || `Sorry, generation failed: ${detail}`;
     }
 
-    await db.chat.add({ role: "assistant", content: full, createdAt: Date.now() });
+    await db.chat.add({
+      conversationId: activeConversationId,
+      role: "assistant",
+      content: full,
+      createdAt: Date.now(),
+    });
+    await db.conversations.update(activeConversationId, { updatedAt: Date.now() });
     setDraftReply("");
     setStreaming(false);
     setLastStats(getLastStatsText());
