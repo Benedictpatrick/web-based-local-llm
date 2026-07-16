@@ -15,7 +15,6 @@ import {
 } from "@/lib/llm";
 import { topRelevantEntries } from "@/lib/retrieval";
 import ModelPicker from "@/components/ModelPicker";
-import LogoMark from "@/components/Logo";
 
 // Memoized so streaming updates (draftReply changing 60x/sec) don't force
 // React to re-diff every past message bubble on every token — on a phone
@@ -37,9 +36,7 @@ const MessageHistory = memo(function MessageHistory({
           </div>
         ) : (
           <div key={m.id} className="msg-enter flex gap-3">
-            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              <LogoMark className="text-xs" />
-            </div>
+            <div className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
             <div className="min-w-0 flex-1 pt-1 text-[15px] leading-relaxed whitespace-pre-wrap">
               {m.content}
             </div>
@@ -268,9 +265,7 @@ export default function Chat() {
           <MessageHistory messages={messages ?? []} />
           {streaming && (
             <div className="msg-enter flex gap-3">
-              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-                <LogoMark className="text-xs" />
-              </div>
+              <div className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
               <div className="min-w-0 flex-1 pt-1 text-[15px] leading-relaxed whitespace-pre-wrap">
                 {draftReply || (
                   <span className="inline-flex gap-1">
