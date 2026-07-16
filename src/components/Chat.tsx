@@ -16,6 +16,7 @@ import {
 import { topRelevantEntries } from "@/lib/retrieval";
 import ModelPicker from "@/components/ModelPicker";
 import MarkdownMessage from "@/components/MarkdownMessage";
+import LoadingScreen from "@/components/LoadingScreen";
 
 // Memoized so streaming updates (draftReply changing 60x/sec) don't force
 // React to re-diff every past message bubble on every token — on a phone
@@ -75,7 +76,9 @@ export default function Chat({
   const [modelId, setModelId] = useState<ModelId>(AVAILABLE_MODELS[0].id);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [progress, setProgress] = useState<string>("");
+  const [progressPct, setProgressPct] = useState<number | null>(null);
   const [errorText, setErrorText] = useState<string>("");
+  const [changingModel, setChangingModel] = useState(false);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [draftReply, setDraftReply] = useState("");
@@ -85,6 +88,7 @@ export default function Chat({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pendingReplyRef = useRef<string>("");
   const flushScheduledRef = useRef(false);
+  const autoLoadStartedRef = useRef(false);
 
   useEffect(() => {
     // "smooth" stacks a new scroll animation on every token during a slow
@@ -99,21 +103,37 @@ export default function Chat({
     }
   }, [messages, draftReply]);
 
-  async function handleLoadModel() {
+  useEffect(() => {
+    // Auto-start the default model on first mount so there's no manual "Load
+    // model" click to get through — ref guard (not just checking status)
+    // because effects run twice under StrictMode in dev, and a second
+    // concurrent call here would race a fresh setStatus("loading") against
+    // the first call's in-flight promise.
+    if (autoLoadStartedRef.current || !wasmSupported) return;
+    autoLoadStartedRef.current = true;
+    handleLoadModel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleLoadModel(idToLoad: ModelId = modelId) {
     setStatus("loading");
     setErrorText("");
+    setProgress("");
+    setProgressPct(null);
     const startedAt = performance.now();
     let sawPartialProgress = false;
     try {
-      await loadEngine(modelId, ({ loaded, total, text }) => {
+      await loadEngine(idToLoad, ({ loaded, total, text }) => {
         if (loaded < total) sawPartialProgress = true;
         if (text) {
           setProgress(text);
+          setProgressPct(null);
           return;
         }
         const pct = total > 0 ? Math.round((loaded / total) * 100) : 0;
         const mb = (n: number) => (n / (1024 * 1024)).toFixed(0);
         setProgress(`Downloading model… ${pct}% (${mb(loaded)} / ${mb(total)} MB)`);
+        setProgressPct(total > 0 ? pct : null);
       });
       const seconds = ((performance.now() - startedAt) / 1000).toFixed(1);
       const persisted = await isStoragePersisted();
@@ -239,68 +259,68 @@ export default function Chat({
     );
   }
 
+  if (changingModel) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="text-sm text-foreground-muted">Choose a model to load</p>
+        <div className="flex w-full max-w-xs items-center gap-2">
+          <ModelPicker
+            value={modelId}
+            onChange={(id) => {
+              setChangingModel(false);
+              setModelId(id);
+              handleLoadModel(id);
+            }}
+            onModelDeleted={(id) => {
+              if (id === modelId) setProgress("");
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          className="text-xs text-foreground-muted hover:text-foreground hover:underline"
+          onClick={() => setChangingModel(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  if (status !== "ready") {
+    return (
+      <LoadingScreen
+        status={status}
+        progress={progress}
+        progressPct={progressPct}
+        modelLabel={AVAILABLE_MODELS.find((m) => m.id === modelId)?.label ?? modelId}
+        errorText={errorText}
+        onRetry={() => handleLoadModel(modelId)}
+      />
+    );
+  }
+
   return (
     <div className="flex h-full flex-col">
-      {status === "ready" ? (
-        <div className="px-3 py-2 text-xs text-foreground-muted sm:px-5">
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate">{AVAILABLE_MODELS.find((m) => m.id === modelId)?.label}</span>
-            <button
-              className="shrink-0 rounded-md px-2 py-1 transition-colors hover:bg-surface hover:text-foreground disabled:opacity-50"
-              onClick={() => setStatus("idle")}
-              disabled={streaming}
-            >
-              Change model
-            </button>
-          </div>
-          {progress && <p className="mt-0.5">{progress}</p>}
+      <div className="px-3 py-2 text-xs text-foreground-muted sm:px-5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate">{AVAILABLE_MODELS.find((m) => m.id === modelId)?.label}</span>
+          <button
+            className="shrink-0 rounded-md px-2 py-1 transition-colors hover:bg-surface hover:text-foreground disabled:opacity-50"
+            onClick={() => setChangingModel(true)}
+            disabled={streaming}
+          >
+            Change model
+          </button>
         </div>
-      ) : (
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-3 py-4 sm:px-5">
-          <div className="flex items-center gap-2">
-            <ModelPicker
-              value={modelId}
-              onChange={setModelId}
-              disabled={status === "loading"}
-              onModelDeleted={(id) => {
-                // The picker is only visible once status has left "ready"
-                // (via "Change model"), so there's no ready-badge to clear
-                // here — just make sure a stale "loaded" progress message
-                // isn't left showing for the model that was just deleted.
-                if (id === modelId) setProgress("");
-              }}
-            />
-            <button
-              className="shrink-0 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-              onClick={handleLoadModel}
-              disabled={status === "loading"}
-            >
-              {status === "loading" ? "Loading…" : "Load model"}
-            </button>
-          </div>
-          {status === "loading" && (
-            <p className="text-xs text-foreground-muted">{progress || "Starting…"}</p>
-          )}
-          {status === "error" && (
-            <p className="text-xs text-red-500">
-              Failed to load the model{errorText ? `: ${errorText}` : ""}. Check
-              your connection for the first download, then it will work
-              offline.
-            </p>
-          )}
-          <p className="text-xs text-foreground-muted">
-            Runs entirely on your device&apos;s CPU via WebAssembly — no GPU
-            required. First load downloads the model to your browser&apos;s
-            cache; after that it works fully offline.
-          </p>
-        </div>
-      )}
+        {progress && <p className="mt-0.5">{progress}</p>}
+      </div>
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-3 sm:px-5">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 py-6">
           {(messages ?? []).length === 0 && !streaming && (
             <div className="flex flex-1 items-center justify-center py-24 text-sm text-foreground-muted">
-              {status === "ready" ? "Ask anything to get started." : "Load a model, then start chatting."}
+              Ask anything to get started.
             </div>
           )}
           <MessageHistory messages={messages ?? []} />
@@ -329,9 +349,9 @@ export default function Chat({
           <div className="flex items-center gap-2 rounded-3xl border border-border bg-surface px-2 py-2 shadow-sm">
             <input
               className="min-w-0 flex-1 bg-transparent px-3 py-1.5 text-base outline-none placeholder:text-foreground-muted"
-              placeholder={status === "ready" ? "Message…" : "Load the model to start chatting"}
+              placeholder="Message…"
               value={input}
-              disabled={status !== "ready" || streaming}
+              disabled={streaming}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSend();
@@ -341,7 +361,7 @@ export default function Chat({
               aria-label="Send"
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-30"
               onClick={handleSend}
-              disabled={status !== "ready" || streaming || !input.trim()}
+              disabled={streaming || !input.trim()}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                 <path

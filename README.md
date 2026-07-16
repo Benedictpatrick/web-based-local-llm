@@ -2,7 +2,7 @@
 
 A private AI study assistant and coding notebook for CS/software students, running entirely on-device in the browser — no server, no API calls, works offline after the first load.
 
-- **Chat** — powered by Llama 3.2 (1B / 3B) and Gemma 2 (2B), running fully client-side. Uses WebGPU ([web-llm](https://github.com/mlc-ai/web-llm)) when the device has a real GPU adapter, falling back automatically to CPU/WebAssembly ([wllama](https://github.com/ngxson/wllama)) otherwise.
+- **Chat** — powered by Llama 3.2 (1B / 3B) and Gemma 2 (2B), running fully client-side. Uses WebGPU ([web-llm](https://github.com/mlc-ai/web-llm)) when the device has a real GPU adapter, falling back automatically to CPU/WebAssembly ([wllama](https://github.com/ngxson/wllama)) otherwise. The default model loads automatically on open — no button to press — behind an animated loading screen.
 - **Maths rendering** — answers render LaTeX via KaTeX, so complexity bounds, recurrences and summations come out as real notation instead of plain text. Works offline: the stylesheet and fonts are precached by the service worker, not fetched on first use.
 - **Notes** — code snippets and lecture notes are stored locally (IndexedDB) and never leave the device. Chat retrieves relevant notes to ground its answers.
 - **Installable PWA** — add to home screen on desktop or mobile; the model is cached in the browser after first download, so it keeps working offline. Downloaded models can be deleted from the model picker to free up space.
