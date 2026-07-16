@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Offline Companion",
+  title: "Airgap",
   description:
     "A private AI assistant and journal that runs entirely on your device — no internet required after setup.",
   manifest: "/manifest.json",

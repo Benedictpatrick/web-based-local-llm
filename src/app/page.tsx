@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Chat from "@/components/Chat";
 import Journal from "@/components/Journal";
+import LogoMark from "@/components/Logo";
 
 export default function Home() {
   const [tab, setTab] = useState<"chat" | "journal">("chat");
@@ -11,13 +12,10 @@ export default function Home() {
     <div className="flex h-dvh flex-col bg-background text-foreground">
       <header className="flex items-center justify-between gap-2 px-3 py-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground text-background">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="9" r="4.5" fill="currentColor" />
-              <rect x="6.5" y="16" width="11" height="4" rx="2" fill="currentColor" />
-            </svg>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <LogoMark className="h-4 w-4" />
           </div>
-          <h1 className="truncate text-sm font-medium">Offline Companion</h1>
+          <h1 className="truncate text-sm font-medium">Airgap</h1>
         </div>
         <nav className="flex shrink-0 gap-0.5 rounded-full bg-surface p-0.5 text-sm">
           <button

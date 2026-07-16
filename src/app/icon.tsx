@@ -11,30 +11,24 @@ export default function Icon() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#000000",
-          borderRadius: 6,
+          background: "#10a37f",
+          borderRadius: 7,
         }}
       >
-        <div
-          style={{
-            width: 12,
-            height: 12,
-            borderRadius: "50%",
-            background: "#ffffff",
-            marginBottom: 3,
-          }}
-        />
-        <div
-          style={{
-            width: 18,
-            height: 6,
-            borderRadius: 3,
-            background: "#ffffff",
-          }}
-        />
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle
+            cx="12"
+            cy="12"
+            r="7.5"
+            stroke="#ffffff"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray="36.5 10.6"
+            transform="rotate(-50 12 12)"
+          />
+        </svg>
       </div>
     ),
     size

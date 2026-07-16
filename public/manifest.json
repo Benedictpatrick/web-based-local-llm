@@ -1,6 +1,6 @@
 {
-  "name": "Offline Companion",
-  "short_name": "Offline AI",
+  "name": "Airgap",
+  "short_name": "Airgap",
   "description": "A private AI assistant and journal that runs entirely on your device.",
   "start_url": "/",
   "display": "standalone",
