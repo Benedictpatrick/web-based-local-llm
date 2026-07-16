@@ -181,11 +181,6 @@ export default function Chat({
       .slice(-MAX_HISTORY_MESSAGES)
       .map((m): ChatCompletionMessage => ({ role: m.role, content: m.content }));
 
-    const lastMessage = history[history.length - 1];
-    if (lastMessage?.role === "user") {
-      lastMessage.content = `${lastMessage.content}\n\n(Respond to this specific message. If it's unrelated to earlier messages in this conversation, address it as a new topic rather than continuing the previous one.)`;
-    }
-
     const promptMessages: ChatCompletionMessage[] = [
       { role: "system", content: SYSTEM_PROMPT + (contextBlock ? `\n\n${contextBlock}` : "") },
       ...history,
