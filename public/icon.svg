@@ -1,3 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <rect width="100" height="100" rx="20" fill="#10a37f"/>
+  <text
+    x="50"
+    y="61"
+    text-anchor="middle"
+    font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
+    font-size="27"
+    font-weight="700"
+    letter-spacing="-1"
+    fill="#ffffff"
+  >Navo</text>
 </svg>

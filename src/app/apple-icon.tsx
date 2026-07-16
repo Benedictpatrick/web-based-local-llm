@@ -10,9 +10,23 @@ export default function AppleIcon() {
         style={{
           width: "100%",
           height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           background: "#10a37f",
         }}
-      />
+      >
+        <span
+          style={{
+            color: "#ffffff",
+            fontSize: 46,
+            fontWeight: "bold",
+            letterSpacing: "-0.03em",
+          }}
+        >
+          Navo
+        </span>
+      </div>
     ),
     size
   );

@@ -10,10 +10,24 @@ export default function Icon() {
         style={{
           width: "100%",
           height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           background: "#10a37f",
           borderRadius: 7,
         }}
-      />
+      >
+        <span
+          style={{
+            color: "#ffffff",
+            fontSize: 13,
+            fontWeight: "bold",
+            letterSpacing: "-0.03em",
+          }}
+        >
+          Navo
+        </span>
+      </div>
     ),
     size
   );
