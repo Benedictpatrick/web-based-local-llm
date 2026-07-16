@@ -38,7 +38,7 @@ const MessageHistory = memo(function MessageHistory({
         ) : (
           <div key={m.id} className="msg-enter flex gap-3">
             <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              <LogoMark className="h-3.5 w-3.5" />
+              <LogoMark className="text-xs" />
             </div>
             <div className="min-w-0 flex-1 pt-1 text-[15px] leading-relaxed whitespace-pre-wrap">
               {m.content}
@@ -269,7 +269,7 @@ export default function Chat() {
           {streaming && (
             <div className="msg-enter flex gap-3">
               <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-                <LogoMark className="h-3.5 w-3.5" />
+                <LogoMark className="text-xs" />
               </div>
               <div className="min-w-0 flex-1 pt-1 text-[15px] leading-relaxed whitespace-pre-wrap">
                 {draftReply || (

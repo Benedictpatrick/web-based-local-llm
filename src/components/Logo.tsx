@@ -1,14 +1,10 @@
-// The Navo mark: a forward-pointing chevron, evoking navigation/direction.
+// Navo has no separate icon mark — the wordmark is the logo. This is only
+// used where a small glyph is structurally required (chat avatar), styled
+// as a plain letterform rather than an unrelated abstract shape.
 export default function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path
-        d="M8 6l8 6-8 6"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <span className={`inline-flex items-center justify-center font-semibold ${className ?? ""}`}>
+      N
+    </span>
   );
 }

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Chat from "@/components/Chat";
 import Journal from "@/components/Journal";
-import LogoMark from "@/components/Logo";
 
 export default function Home() {
   const [tab, setTab] = useState<"chat" | "journal">("chat");
@@ -12,10 +11,7 @@ export default function Home() {
     <div className="flex h-dvh flex-col bg-background text-foreground">
       <header className="flex items-center justify-between gap-2 px-3 py-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-            <LogoMark className="h-4 w-4" />
-          </div>
-          <h1 className="truncate text-sm font-medium">Navo</h1>
+          <h1 className="truncate text-base font-semibold tracking-tight">Navo</h1>
         </div>
         <nav className="flex shrink-0 gap-0.5 rounded-full bg-surface p-0.5 text-sm">
           <button
