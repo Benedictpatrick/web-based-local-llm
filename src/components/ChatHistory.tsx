@@ -84,7 +84,7 @@ export default function ChatHistory({
               </button>
               <button
                 aria-label={`Delete chat: ${c.title || "New chat"}`}
-                className="shrink-0 rounded-md p-1.5 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+                className="shrink-0 rounded-md p-1.5 text-foreground-muted transition-colors hover:text-red-500"
                 onClick={() => handleDelete(c.id)}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">

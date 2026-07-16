@@ -135,7 +135,7 @@ export default function ModelPicker({
                 <button
                   type="button"
                   aria-label={`Delete downloaded ${m.label}`}
-                  className="shrink-0 rounded-md p-1 text-foreground-muted opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 disabled:opacity-50"
+                  className="shrink-0 rounded-md p-1 text-foreground-muted transition-colors hover:text-red-500 disabled:opacity-50"
                   disabled={deletingId === m.id}
                   onClick={(e) => {
                     e.stopPropagation();
