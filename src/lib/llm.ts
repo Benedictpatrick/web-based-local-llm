@@ -5,25 +5,25 @@ const HF_BASE = "https://huggingface.co";
 
 export const AVAILABLE_MODELS = [
   {
-    id: "qwen2.5-0.5b",
-    label: "Qwen2.5 0.5B (fastest, ~0.5GB)",
-    repo: "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
-    file: "qwen2.5-0.5b-instruct-q4_k_m.gguf",
-    mlcId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
+    id: "llama3.2-1b",
+    label: "Llama 3.2 1B (fastest, ~0.7GB)",
+    repo: "bartowski/Llama-3.2-1B-Instruct-GGUF",
+    file: "Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+    mlcId: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
   },
   {
-    id: "qwen2.5-1.5b",
-    label: "Qwen2.5 1.5B (balanced, ~1GB)",
-    repo: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
-    file: "qwen2.5-1.5b-instruct-q4_k_m.gguf",
-    mlcId: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
+    id: "gemma2-2b",
+    label: "Gemma 2 2B (balanced, ~1.6GB)",
+    repo: "bartowski/gemma-2-2b-it-GGUF",
+    file: "gemma-2-2b-it-Q4_K_M.gguf",
+    mlcId: "gemma-2-2b-it-q4f16_1-MLC",
   },
   {
-    id: "qwen2.5-3b",
-    label: "Qwen2.5 3B (better quality, ~2GB)",
-    repo: "Qwen/Qwen2.5-3B-Instruct-GGUF",
-    file: "qwen2.5-3b-instruct-q4_k_m.gguf",
-    mlcId: "Qwen2.5-3B-Instruct-q4f16_1-MLC",
+    id: "llama3.2-3b",
+    label: "Llama 3.2 3B (better quality, ~1.9GB)",
+    repo: "bartowski/Llama-3.2-3B-Instruct-GGUF",
+    file: "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+    mlcId: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
   },
 ] as const;
 
