@@ -7,6 +7,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { runPython } from "@/lib/pythonRunner";
 
 // Bridges the gap between the LaTeX small models actually emit and the narrow
 // slice remark-math accepts. Two mismatches, both verified against the parser:
@@ -47,24 +48,56 @@ function normalizeMathDelimiters(markdown: string): string {
     .join("");
 }
 
+// Pyodide only — running arbitrary JS in a Worker isn't a real sandbox (it
+// can still fetch()), so that's not offered here at all rather than
+// mislabeled as safe. Python covers the common case for this app anyway.
+const RUNNABLE_LANGUAGES = new Set(["python", "py"]);
+
 function CodeBlock({ language, code }: { language: string; code: string }) {
   const [copied, setCopied] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<{ output: string; ok: boolean } | null>(null);
+
+  const runnable = RUNNABLE_LANGUAGES.has(language.toLowerCase());
+
+  async function handleRun() {
+    setRunning(true);
+    setResult(null);
+    try {
+      setResult(await runPython(code));
+    } finally {
+      setRunning(false);
+    }
+  }
 
   return (
     <div className="my-2 overflow-hidden rounded-xl border border-border text-[13px]">
       <div className="flex items-center justify-between bg-surface px-3 py-1.5 text-xs text-foreground-muted">
         <span>{language || "text"}</span>
-        <button
-          type="button"
-          className="rounded px-1.5 py-0.5 transition-colors hover:bg-surface-hover hover:text-foreground"
-          onClick={() => {
-            navigator.clipboard.writeText(code).catch(() => {});
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          }}
-        >
-          {copied ? "Copied" : "Copy"}
-        </button>
+        <div className="flex items-center gap-1">
+          {runnable && (
+            <button
+              type="button"
+              className="rounded px-1.5 py-0.5 transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
+              onClick={handleRun}
+              disabled={running}
+              title="Runs in your browser via Pyodide (experimental). The first run on this device downloads the Python runtime, which needs a network connection."
+            >
+              {running ? "Running…" : "▶ Run"}
+            </button>
+          )}
+          <button
+            type="button"
+            className="rounded px-1.5 py-0.5 transition-colors hover:bg-surface-hover hover:text-foreground"
+            onClick={() => {
+              navigator.clipboard.writeText(code).catch(() => {});
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <SyntaxHighlighter
@@ -80,6 +113,15 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
           {code}
         </SyntaxHighlighter>
       </div>
+      {result && (
+        <pre
+          className={`overflow-x-auto whitespace-pre-wrap border-t border-border px-3 py-2 font-mono text-xs ${
+            result.ok ? "text-foreground-muted" : "text-red-500"
+          }`}
+        >
+          {result.output}
+        </pre>
+      )}
     </div>
   );
 }
