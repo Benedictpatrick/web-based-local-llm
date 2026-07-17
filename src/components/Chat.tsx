@@ -216,7 +216,7 @@ export default function Chat({
       createdAt: Date.now(),
     });
 
-    const relevant = topRelevantEntries(text, journalEntries ?? [], 3);
+    const relevant = await topRelevantEntries(text, journalEntries ?? [], 3);
     const contextBlock =
       relevant.length > 0
         ? `Relevant notes the user saved earlier:\n${relevant

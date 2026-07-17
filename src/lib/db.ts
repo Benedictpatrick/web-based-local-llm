@@ -4,6 +4,10 @@ export interface JournalEntry {
   id: number;
   text: string;
   createdAt: number;
+  // Sentence embedding for semantic retrieval, computed on save. Optional
+  // because entries created before this field existed won't have one yet —
+  // retrieval backfills those lazily on first use.
+  embedding?: number[];
 }
 
 export interface Conversation {

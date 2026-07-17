@@ -1,39 +1,36 @@
-import type { JournalEntry } from "./db";
+import { db, type JournalEntry } from "./db";
+import { cosineSimilarity, embed } from "./embeddings";
 
-const STOPWORDS = new Set([
-  "the", "a", "an", "and", "or", "but", "is", "are", "was", "were", "be",
-  "to", "of", "in", "on", "at", "for", "with", "about", "as", "it", "this",
-  "that", "i", "you", "my", "me", "we", "do", "did", "does", "have", "has",
-  "had", "not", "so", "just", "what", "how", "why", "when",
-]);
+// Cosine similarity for unrelated sentence pairs from this model typically
+// sits below ~0.2; genuinely related ones land well above 0.3. Filtering
+// below this cuts noise without hiding paraphrased-but-relevant notes.
+const SIMILARITY_THRESHOLD = 0.3;
 
-function tokenize(text: string): string[] {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 1 && !STOPWORDS.has(w));
+async function embeddingFor(entry: JournalEntry): Promise<number[]> {
+  if (entry.embedding) return entry.embedding;
+  // Backfill for notes saved before semantic search existed.
+  const embedding = await embed(entry.text);
+  await db.journal.update(entry.id, { embedding });
+  return embedding;
 }
 
-export function topRelevantEntries(
+export async function topRelevantEntries(
   query: string,
   entries: JournalEntry[],
   k = 3
-): JournalEntry[] {
-  const queryTokens = new Set(tokenize(query));
-  if (queryTokens.size === 0) return [];
+): Promise<JournalEntry[]> {
+  if (entries.length === 0) return [];
 
-  const scored = entries.map((entry) => {
-    const entryTokens = tokenize(entry.text);
-    let overlap = 0;
-    for (const token of entryTokens) {
-      if (queryTokens.has(token)) overlap++;
-    }
-    return { entry, score: overlap };
-  });
+  const queryEmbedding = await embed(query);
+  const scored = await Promise.all(
+    entries.map(async (entry) => ({
+      entry,
+      score: cosineSimilarity(queryEmbedding, await embeddingFor(entry)),
+    }))
+  );
 
   return scored
-    .filter((s) => s.score > 0)
+    .filter((s) => s.score > SIMILARITY_THRESHOLD)
     .sort((a, b) => b.score - a.score)
     .slice(0, k)
     .map((s) => s.entry);

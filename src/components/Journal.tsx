@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
+import { embed } from "@/lib/embeddings";
 
 export default function Journal() {
   const entries = useLiveQuery(
@@ -11,12 +12,21 @@ export default function Journal() {
     []
   );
   const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
 
   async function handleAdd() {
     const text = draft.trim();
     if (!text) return;
-    await db.journal.add({ text, createdAt: Date.now() });
     setDraft("");
+    setSaving(true);
+    try {
+      // Embed before writing so the note is searchable the moment it
+      // appears, rather than waiting for retrieval to backfill it later.
+      const embedding = await embed(text);
+      await db.journal.add({ text, createdAt: Date.now(), embedding });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete(id: number) {
@@ -38,9 +48,9 @@ export default function Journal() {
             <button
               className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-30"
               onClick={handleAdd}
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || saving}
             >
-              Save note
+              {saving ? "Saving…" : "Save note"}
             </button>
           </div>
         </div>
