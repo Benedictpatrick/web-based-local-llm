@@ -46,7 +46,7 @@ export default function RootLayout({
           "just import it" advice from the rule below doesn't apply here.
           See scripts/sync-katex.mjs. */}
       {/* eslint-disable-next-line @next/next/no-css-tags */}
-      <link rel="stylesheet" href="/katex/katex.min.css" />
+      <link rel="stylesheet" href="/katex/katex.min.css" precedence="default" />
       <body className="min-h-full flex flex-col">
         {children}
         <RegisterServiceWorker />
