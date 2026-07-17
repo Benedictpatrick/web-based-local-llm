@@ -3,7 +3,7 @@
 
 # Navo
 
-A private AI study assistant that runs entirely in your browser. No server, no API key, no signup.
+A private AI assistant that runs entirely in your browser. No server, no API key, no signup.
 
 [![License: MIT](https://img.shields.io/github/license/Benedictpatrick/Web-based-local-OfflineLLM)](LICENSE)
 

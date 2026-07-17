@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Navo",
   description:
-    "A private AI study assistant and coding notebook that runs entirely on your device — no internet required after setup.",
+    "A private AI assistant and coding notebook that runs entirely on your device. No internet required after setup.",
   manifest: "/manifest.json",
 };
 
