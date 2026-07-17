@@ -8,8 +8,7 @@ A private AI study assistant that runs entirely in your browser. No server, no A
 [![License: MIT](https://img.shields.io/github/license/Benedictpatrick/Web-based-local-OfflineLLM)](LICENSE)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Benedictpatrick/Web-based-local-OfflineLLM)
 
-<!-- TODO: swap in the live Vercel URL once Deployment Protection is disabled for Production -->
-<!-- **[Try it now →](<live-url>)** -->
+**[Try it now →](https://offline-companion-benedictpatrickjohn-9567s-projects.vercel.app)**
 
 ![Navo chat rendering a LaTeX equation](public/screenshot-chat.png)
 
