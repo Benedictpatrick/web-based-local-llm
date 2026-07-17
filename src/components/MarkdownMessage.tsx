@@ -81,7 +81,7 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
               className="rounded px-1.5 py-0.5 transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
               onClick={handleRun}
               disabled={running}
-              title="Runs in your browser via Pyodide (experimental). The first run on this device downloads the Python runtime, which needs a network connection."
+              title="Runs in your browser via Pyodide (experimental). The first run on this device downloads the Python runtime, which needs a network connection. Doesn't support input() — code that reads input will error."
             >
               {running ? "Running…" : "▶ Run"}
             </button>

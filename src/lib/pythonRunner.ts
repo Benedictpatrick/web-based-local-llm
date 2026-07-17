@@ -54,6 +54,12 @@ export async function runPython(code: string): Promise<PythonRunResult> {
   const lines: string[] = [];
   pyodide.setStdout({ batched: (line) => lines.push(line) });
   pyodide.setStderr({ batched: (line) => lines.push(line) });
+  // Left unconfigured, Pyodide's default stdin falls back to the browser's
+  // native window.prompt() — a blank, unstyled dialog with no indication of
+  // what it wants, popping up over the app. There's no UI here to feed it a
+  // real answer, so make input() fail loud and readable (a normal Python
+  // EOFError in the output pane) instead of surfacing that dialog at all.
+  pyodide.setStdin({ stdin: () => null });
 
   try {
     const result = await pyodide.runPythonAsync(code);
