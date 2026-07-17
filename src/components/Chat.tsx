@@ -15,7 +15,8 @@ import {
   loadEngine,
   streamChat,
 } from "@/lib/llm";
-import { topRelevantEntries } from "@/lib/retrieval";
+import { topRelevantEntries, embedChunks, topRelevantChunks, type TextChunk } from "@/lib/retrieval";
+import { extractTextFromFile, chunkText } from "@/lib/fileExtraction";
 import ModelPicker from "@/components/ModelPicker";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -92,9 +93,15 @@ export default function Chat({
   const [draftReply, setDraftReply] = useState("");
   const [wasmSupported] = useState(() => isWasmSupported());
   const [lastStats, setLastStats] = useState<string | null>(null);
+  const [attachedFile, setAttachedFile] = useState<{ name: string; chunks: TextChunk[] } | null>(
+    null
+  );
+  const [attachingFile, setAttachingFile] = useState(false);
+  const [attachError, setAttachError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingReplyRef = useRef<string>("");
   const flushScheduledRef = useRef(false);
   const autoLoadStartedRef = useRef(false);
@@ -197,12 +204,27 @@ export default function Chat({
   // itself gets built and streamed.
   async function generateReply(activeConversationId: number, userText: string) {
     const relevant = await topRelevantEntries(userText, journalEntries ?? [], 3);
-    const contextBlock =
+    const notesBlock =
       relevant.length > 0
         ? `Relevant notes the user saved earlier:\n${relevant
             .map((e) => `- ${e.text}`)
             .join("\n")}\n\n`
         : "";
+
+    // Kept to 3 short excerpts, not the whole file — the small models here
+    // run with a 1-2k token context window, so a generously-sized file
+    // context would crowd out the actual conversation history.
+    const fileChunks = attachedFile
+      ? await topRelevantChunks(userText, attachedFile.chunks, 3)
+      : [];
+    const fileBlock =
+      fileChunks.length > 0
+        ? `Excerpts from the uploaded file "${attachedFile?.name}":\n${fileChunks
+            .map((c) => `- ${c}`)
+            .join("\n")}\n\n`
+        : "";
+
+    const contextBlock = notesBlock + fileBlock;
 
     // Sending the full history means prefill cost (and thus lag) grows with
     // every message, and can eventually overflow the context window. Cap it
@@ -315,6 +337,25 @@ export default function Chat({
 
   function handleStop() {
     abortGeneration();
+  }
+
+  async function handleAttachFile(file: File) {
+    setAttachError(null);
+    setAttachingFile(true);
+    try {
+      const text = await extractTextFromFile(file);
+      const chunks = await embedChunks(chunkText(text));
+      if (chunks.length === 0) {
+        setAttachError("Couldn't find any text in that file.");
+        return;
+      }
+      setAttachedFile({ name: file.name, chunks });
+    } catch (err) {
+      console.error(err);
+      setAttachError("Couldn't read that file — try a .txt, .md, or .pdf.");
+    } finally {
+      setAttachingFile(false);
+    }
   }
 
   if (!wasmSupported) {
@@ -441,7 +482,65 @@ export default function Chat({
 
       <div className="px-3 pb-5 pt-2 sm:px-5">
         <div className="mx-auto w-full max-w-2xl">
+          {(attachedFile || attachingFile || attachError) && (
+            <div className="mb-2 flex items-center gap-2 text-xs">
+              {attachingFile ? (
+                <span className="text-foreground-muted">Reading file…</span>
+              ) : attachError ? (
+                <span className="text-red-500">{attachError}</span>
+              ) : (
+                attachedFile && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-foreground-muted">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    {attachedFile.name}
+                    <button
+                      aria-label="Remove file"
+                      className="text-foreground-muted hover:text-foreground"
+                      onClick={() => setAttachedFile(null)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                )
+              )}
+            </div>
+          )}
           <div className="flex items-end gap-2 rounded-3xl border border-border bg-surface px-2 py-2 shadow-sm">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) handleAttachFile(file);
+              }}
+            />
+            <button
+              aria-label="Attach a file"
+              className="mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-background hover:text-foreground disabled:opacity-30"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={streaming || attachingFile}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
             <textarea
               ref={textareaRef}
               rows={1}

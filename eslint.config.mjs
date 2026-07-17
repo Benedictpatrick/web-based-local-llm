@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored by scripts/sync-pdfjs.mjs — minified, not source we own.
+    "public/pdfjs/**",
   ]),
 ]);
 
