@@ -8,6 +8,7 @@ import rehypeKatex from "rehype-katex";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { runPython } from "@/lib/pythonRunner";
+import { guessLanguage } from "@/lib/codeLanguage";
 
 function normalizeMathDelimiters(markdown: string): string {
   return markdown
@@ -30,14 +31,6 @@ function normalizeMathDelimiters(markdown: string): string {
 }
 
 const RUNNABLE_LANGUAGES = new Set(["python", "py"]);
-
-const PYTHON_SIGNATURE =
-  /(^|\n)\s*(def |class |import |from \S+ import |print\(|if __name__ == ['"]__main__['"])/;
-
-function guessLanguage(language: string, code: string): string {
-  if (language) return language;
-  return PYTHON_SIGNATURE.test(code) ? "python" : language;
-}
 
 function CodeBlock({ language: rawLanguage, code }: { language: string; code: string }) {
   const [copied, setCopied] = useState(false);
