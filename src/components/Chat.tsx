@@ -59,6 +59,12 @@ const SMALL_TALK_PROMPT =
 const SMALL_TALK_RE =
   /^(hi+|hii+|hey+( there)?|hello+|yo+|sup|wassup|what'?s up|howdy|good (morning|afternoon|evening|night)|how are you( doing)?|how'?s it going|thank(s| you)( so much| a lot)?|ok(ay)?|cool|nice|great|bye+|goodbye|see you|hola|namaste)[\s!.?,]*$/i;
 
+const CODE_PROMPT =
+  "You are Navo, a programming assistant. The user is asking for code. Answer with exactly one complete, correct, runnable code block in a markdown fence tagged with the language name, optionally preceded by one short sentence. No placeholders, no omissions, nothing after the code block.";
+
+const CODE_RE =
+  /\b(code|program|programme|script|function|method|class|implement|algorithm|snippet|debug|fix (this|my)|error in|write.*(loop|api|query)|python|javascript|typescript|java|c\+\+|c#|golang|rust|kotlin|swift|sql|html|css|bash|regex)\b/i;
+
 const MAX_TEXTAREA_HEIGHT = 160;
 
 export default function Chat({
@@ -210,25 +216,29 @@ export default function Chat({
 
     const contextBlock = notesBlock + fileBlock;
 
-    const MAX_HISTORY_MESSAGES = 6;
+    const isCodeRequest = CODE_RE.test(userText);
+    const MAX_HISTORY_MESSAGES = isCodeRequest ? 2 : 6;
     const history = (
       await db.chat.where("conversationId").equals(activeConversationId).sortBy("createdAt")
     )
       .slice(-MAX_HISTORY_MESSAGES)
       .map((m): ChatCompletionMessage => ({ role: m.role, content: m.content }));
 
+    const systemPrompt = isCodeRequest ? CODE_PROMPT : SYSTEM_PROMPT;
     await streamReply(
       [
-        { role: "system", content: SYSTEM_PROMPT + (contextBlock ? `\n\n${contextBlock}` : "") },
+        { role: "system", content: systemPrompt + (contextBlock ? `\n\n${contextBlock}` : "") },
         ...history,
       ],
-      activeConversationId
+      activeConversationId,
+      isCodeRequest ? { temperature: 0.3 } : undefined
     );
   }
 
   async function streamReply(
     promptMessages: ChatCompletionMessage[],
-    activeConversationId: number
+    activeConversationId: number,
+    opts?: { temperature?: number }
   ) {
     setStreaming(true);
     setDraftReply("");
@@ -245,7 +255,7 @@ export default function Chat({
     };
 
     try {
-      for await (const chunk of streamChat(promptMessages)) {
+      for await (const chunk of streamChat(promptMessages, opts)) {
         full += chunk;
         pendingReplyRef.current = full;
         scheduleFlush();

@@ -272,14 +272,17 @@ export function getLastStatsText(): string | null {
   return `${lastWasmTimings.predicted_per_second.toFixed(1)} tokens/sec`;
 }
 
+export type ChatOptions = { temperature?: number };
+
 export async function* streamChat(
-  messages: ChatCompletionMessage[]
+  messages: ChatCompletionMessage[],
+  opts?: ChatOptions
 ): AsyncGenerator<string> {
   if (engineKind === "webgpu") {
-    yield* streamWebgpuChat(messages);
+    yield* streamWebgpuChat(messages, opts);
     return;
   }
-  yield* streamWasmChat(messages);
+  yield* streamWasmChat(messages, opts);
 }
 
 export function abortGeneration(): void {
@@ -303,20 +306,25 @@ export function isEngineLostError(err: unknown): boolean {
   );
 }
 
-function createWebgpuCompletion(engine: MLCEngine, messages: ChatCompletionMessage[]) {
+function createWebgpuCompletion(
+  engine: MLCEngine,
+  messages: ChatCompletionMessage[],
+  opts?: ChatOptions
+) {
   return engine.chat.completions.create({
     messages: messages as never,
     stream: true,
     stream_options: { include_usage: true },
     max_tokens: 768,
-    temperature: 0.5,
+    temperature: opts?.temperature ?? 0.5,
     top_p: 0.9,
     repetition_penalty: 1.1,
   });
 }
 
 async function* streamWebgpuChat(
-  messages: ChatCompletionMessage[]
+  messages: ChatCompletionMessage[],
+  opts?: ChatOptions
 ): AsyncGenerator<string> {
   const engine = webllmEngine;
   if (!engine) {
@@ -325,11 +333,11 @@ async function* streamWebgpuChat(
 
   let result: Awaited<ReturnType<typeof createWebgpuCompletion>>;
   try {
-    result = await createWebgpuCompletion(engine, messages);
+    result = await createWebgpuCompletion(engine, messages, opts);
   } catch (err) {
     if (!isEngineLostError(err) || !webllmMlcId) throw err;
     await engine.reload(webllmMlcId);
-    result = await createWebgpuCompletion(engine, messages);
+    result = await createWebgpuCompletion(engine, messages, opts);
   }
 
   for await (const chunk of result) {
@@ -343,7 +351,8 @@ async function* streamWebgpuChat(
 }
 
 async function* streamWasmChat(
-  messages: ChatCompletionMessage[]
+  messages: ChatCompletionMessage[],
+  opts?: ChatOptions
 ): AsyncGenerator<string> {
   if (!wllama) {
     throw new Error("Engine not loaded yet");
@@ -357,7 +366,7 @@ async function* streamWasmChat(
     timings_per_token: true,
     abortSignal: wasmAbortController.signal,
     max_tokens: 512,
-    temp: 0.5,
+    temp: opts?.temperature ?? 0.5,
     top_p: 0.9,
     min_p: 0.05,
     penalty_repeat: 1.1,
