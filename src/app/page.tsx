@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import Chat from "@/components/Chat";
+import { useRef, useState } from "react";
+import Chat, { type ChatHandle } from "@/components/Chat";
 import ChatHistory from "@/components/ChatHistory";
 import Journal from "@/components/Journal";
+import Settings from "@/components/Settings";
 
 export default function Home() {
-  const [tab, setTab] = useState<"chat" | "notes">("chat");
+  const [tab, setTab] = useState<"chat" | "notes" | "settings">("chat");
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const chatRef = useRef<ChatHandle>(null);
 
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground">
@@ -51,14 +53,36 @@ export default function Home() {
           >
             Notes
           </button>
+          <button
+            className={`rounded-full px-2.5 py-1.5 transition-colors sm:px-3.5 ${
+              tab === "settings"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-foreground-muted hover:text-foreground"
+            }`}
+            onClick={() => setTab("settings")}
+          >
+            Settings
+          </button>
         </nav>
       </header>
       <main className="min-h-0 flex-1">
         <div className={tab === "chat" ? "h-full" : "hidden"}>
-          <Chat conversationId={conversationId} onConversationChange={setConversationId} />
+          <Chat
+            ref={chatRef}
+            conversationId={conversationId}
+            onConversationChange={setConversationId}
+          />
         </div>
         <div className={tab === "notes" ? "h-full" : "hidden"}>
           <Journal />
+        </div>
+        <div className={tab === "settings" ? "h-full" : "hidden"}>
+          <Settings
+            onChangeModel={() => {
+              setTab("chat");
+              chatRef.current?.openModelPicker();
+            }}
+          />
         </div>
       </main>
       <ChatHistory

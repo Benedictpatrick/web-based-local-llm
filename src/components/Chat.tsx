@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import type { ChatCompletionMessage } from "@wllama/wllama/esm/index.js";
 import { db, type ChatMessage } from "@/lib/db";
@@ -148,12 +148,18 @@ const STUCK_GENERATION_TIMEOUT_MS = 45_000;
 const MAX_STUCK_RETRIES = 1;
 const MAX_LOAD_RETRIES = 2;
 
+export interface ChatHandle {
+  openModelPicker: () => void;
+}
+
 export default function Chat({
   conversationId,
   onConversationChange,
+  ref,
 }: {
   conversationId: number | null;
   onConversationChange: (id: number) => void;
+  ref?: React.Ref<ChatHandle>;
 }) {
   const messages = useLiveQuery(
     () =>
@@ -228,6 +234,11 @@ export default function Chat({
       if (statusDetailTimeoutRef.current) clearTimeout(statusDetailTimeoutRef.current);
     };
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    openModelPicker: () => setChangingModel(true),
+  }));
+
 
   useEffect(() => {
     return () => {
@@ -679,20 +690,43 @@ export default function Chat({
     <div className="flex h-full flex-col">
       <div className="px-3 py-2 text-xs text-foreground-muted sm:px-5">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate">{AVAILABLE_MODELS.find((m) => m.id === modelId)?.label}</span>
+          <span className="flex min-w-0 items-center gap-1.5 truncate rounded-full bg-surface px-2.5 py-1">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span className="truncate">{AVAILABLE_MODELS.find((m) => m.id === modelId)?.label}</span>
+          </span>
           <div className="flex shrink-0 items-center gap-1">
             <button
-              className="rounded-md px-2 py-1 transition-colors hover:bg-surface hover:text-foreground"
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1 transition-colors hover:bg-surface hover:text-foreground ${
+                showStats ? "bg-surface text-foreground" : ""
+              }`}
               onClick={() => setShowStats((v) => !v)}
               aria-expanded={showStats}
             >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5 20V10M12 20V4M19 20v-6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
               Stats
             </button>
             <button
-              className="rounded-md px-2 py-1 transition-colors hover:bg-surface hover:text-foreground disabled:opacity-50"
+              className="flex items-center gap-1 rounded-full px-2.5 py-1 transition-colors hover:bg-surface hover:text-foreground disabled:opacity-50"
               onClick={() => setChangingModel(true)}
               disabled={streaming}
             >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M3 12a9 9 0 0 1 15.3-6.4M21 12a9 9 0 0 1-15.3 6.4M3 5v6h6M21 19v-6h-6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
               Change model
             </button>
           </div>
@@ -885,7 +919,7 @@ export default function Chat({
               )}
             </div>
           )}
-          <div className="flex items-end gap-2 rounded-3xl border border-border bg-surface px-2 py-2 shadow-sm">
+          <div className="flex flex-col gap-1 rounded-3xl border border-border bg-surface px-3 pb-2 pt-3 shadow-sm">
             <input
               ref={fileInputRef}
               type="file"
@@ -897,78 +931,10 @@ export default function Chat({
                 if (file) handleAttachFile(file);
               }}
             />
-            <button
-              aria-label="Attach a file"
-              className="mb-0.5 flex h-10 w-10 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-background hover:text-foreground disabled:opacity-30"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={streaming || attachingFile}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              aria-pressed={agentMode}
-              aria-label="Toggle auto-run code"
-              title="Let the assistant run Python automatically to compute exact answers"
-              className={`mb-0.5 flex h-10 w-10 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${
-                agentMode
-                  ? "bg-accent text-accent-foreground"
-                  : "text-foreground-muted hover:bg-background hover:text-foreground"
-              }`}
-              onClick={() => setAgentMode((v) => !v)}
-              disabled={streaming}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              aria-label={micState === "recording" ? "Stop recording" : "Record a voice message"}
-              title="Speak instead of typing — transcribed on-device, audio never leaves your browser. First use downloads a ~150MB speech model."
-              className={`mb-0.5 flex h-10 w-10 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${
-                micState === "recording"
-                  ? "bg-red-500 text-white"
-                  : "text-foreground-muted hover:bg-background hover:text-foreground"
-              }`}
-              onClick={handleMicClick}
-              disabled={streaming || micState === "transcribing"}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M19 11a7 7 0 0 1-14 0M12 19v3"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
             <textarea
               ref={textareaRef}
               rows={1}
-              className="min-w-0 flex-1 resize-none bg-transparent px-3 py-1.5 text-base leading-relaxed outline-none placeholder:text-foreground-muted"
+              className="w-full resize-none bg-transparent text-base leading-relaxed outline-none placeholder:text-foreground-muted"
               placeholder="Message…"
               value={input}
               disabled={streaming}
@@ -980,28 +946,102 @@ export default function Chat({
                 }
               }}
             />
-            <button
-              aria-label={streaming ? "Stop" : "Send"}
-              className="mb-0.5 flex h-10 w-10 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-accent text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-30"
-              onClick={streaming ? handleStop : handleSend}
-              disabled={!streaming && !input.trim()}
-            >
-              {streaming ? (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="5" y="5" width="14" height="14" rx="2" />
-                </svg>
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 19V5M12 5L5 12M12 5L19 12"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-            </button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <button
+                  aria-label="Attach a file"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-background hover:text-foreground disabled:opacity-30 sm:h-9 sm:w-9"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={streaming || attachingFile}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={agentMode}
+                  aria-label="Toggle auto-run code"
+                  title="Let the assistant run Python automatically to compute exact answers"
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-30 sm:h-9 sm:w-9 ${
+                    agentMode
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground-muted hover:bg-background hover:text-foreground"
+                  }`}
+                  onClick={() => setAgentMode((v) => !v)}
+                  disabled={streaming}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label={micState === "recording" ? "Stop recording" : "Record a voice message"}
+                  title="Speak instead of typing — transcribed on-device, audio never leaves your browser. First use downloads a ~150MB speech model."
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-30 sm:h-9 sm:w-9 ${
+                    micState === "recording"
+                      ? "bg-red-500 text-white"
+                      : "text-foreground-muted hover:bg-background hover:text-foreground"
+                  }`}
+                  onClick={handleMicClick}
+                  disabled={streaming || micState === "transcribing"}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M19 11a7 7 0 0 1-14 0M12 19v3"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+                <button
+                  aria-label={streaming ? "Stop" : "Send"}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-30 sm:h-9 sm:w-9"
+                  onClick={streaming ? handleStop : handleSend}
+                  disabled={!streaming && !input.trim()}
+                >
+                  {streaming ? (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="5" y="5" width="14" height="14" rx="2" />
+                    </svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 19V5M12 5L5 12M12 5L19 12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
           {lastStats && (
             <p className="mt-2 text-center text-xs text-foreground-muted">
