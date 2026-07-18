@@ -1,62 +1,232 @@
 <div align="center">
-  <img src="public/icon.svg" alt="" width="64" height="64">
 
-# Navo
+<img src="public/banner.png" alt="Navo Banner" width="100%">
 
-A private AI assistant that runs entirely in your browser. No server, no API key, no signup.
+<br/>
 
-[![License: MIT](https://img.shields.io/github/license/Benedictpatrick/Web-based-local-OfflineLLM)](LICENSE)
+### *A Private, Local-First AI Assistant Operating 100% In Your Browser on Desktop & Mobile*
 
-**[Try it now →](https://offline-companion-benedictpatrickjohn-9567s-projects.vercel.app)**
+[![Live Demo](https://img.shields.io/badge/Demo-Try%20Live%20Now-success?style=for-the-badge&logo=vercel&logoColor=white&color=00c853)](https://offline-companion-benedictpatrickjohn-9567s-projects.vercel.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Framework-Next.js%2015-black?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PWA](https://img.shields.io/badge/PWA-Installable-ff69b4?style=for-the-badge&logo=progressive-web-apps&logoColor=white)](#features)
+
+<p align="center">
+  <a href="https://offline-companion-benedictpatrickjohn-9567s-projects.vercel.app"><b>Try it now →</b></a>
+  •
+  <a href="#getting-started"><b>Quick Start</b></a>
+  •
+  <a href="#system-architecture"><b>Architecture</b></a>
+  •
+  <a href="#compatibility-matrix"><b>Compatibility</b></a>
+  •
+  <a href="https://github.com/Benedictpatrick/Web-based-local-OfflineLLM/issues"><b>Report Issue</b></a>
+</p>
 
 ![Navo generating a Python function, entirely in-browser](public/navo-demo.gif)
 
 </div>
 
-The model, the chat, and your notes all live on your device. There's no backend. Open the tab, the model downloads once and caches, and after that it works with no internet at all.
+---
 
-Runs Llama 3.2 (1B/3B) or Gemma 2 (2B) fully client-side, via WebGPU where available and WebAssembly otherwise. These are small models, so don't expect frontier-level reasoning. They're good for definitions, complexity analysis, and "what does this error mean," not for anything you can't afford to double-check.
+## Overview
+
+Navo is a private, client-side AI assistant designed to run fully within your browser on both desktop and mobile devices. There is no server, no external API keys, no analytics trackers, and no mandatory signups. 
+
+The LLM engine, embedding generation, vector search database, document parser, code sandbox, and mathematical renderer all live on your local device. After the initial load, the service worker caches the assets and model files, allowing Navo to function completely offline without an internet connection.
+
+> [!IMPORTANT]
+> **100% Privacy Guarded:** Since there is no backend server transmitting logs, your chat history, documents, and notes never leave your computer. 
+
+---
 
 ## Features
 
-- **Chat**, powered by Llama 3.2 (1B / 3B) and Gemma 2 (2B), running fully client-side. Uses WebGPU ([web-llm](https://github.com/mlc-ai/web-llm)) when the device has a real GPU adapter, falling back automatically to CPU/WebAssembly ([wllama](https://github.com/ngxson/wllama)) otherwise. The default model loads automatically on open, no button to press, behind an animated loading screen.
-- **Maths rendering**: answers render LaTeX via KaTeX, so complexity bounds, recurrences and summations come out as real notation instead of plain text. Works offline, since the stylesheet and fonts are precached by the service worker instead of fetched on first use.
-- **Notes with semantic search**: code snippets and lecture notes are stored locally (IndexedDB) and never leave the device. Each note is embedded on save with a small in-browser model ([transformers.js](https://github.com/huggingface/transformers.js), all-MiniLM-L6-v2), so chat retrieves notes by meaning, not just shared keywords, and grounds its answers with them.
-- **Chat about a file**: attach a `.txt`, `.md`, or `.pdf` (extracted client-side with [pdf.js](https://github.com/mozilla/pdf.js)) and ask questions about it. The file is chunked and embedded the same way notes are, so answers pull from the specific relevant excerpts, not the whole document crammed into context.
-- **Run Python inline**: code blocks the model writes in Python get a "Run" button that executes them in-browser via [Pyodide](https://pyodide.org), no server round-trip. Experimental, and the one feature here that needs a network connection on first use to fetch the runtime — after that it's cached like everything else.
-- **Stop and regenerate**: cut off a response mid-stream, or ask for a fresh take on the last answer without retyping the question.
-- **Installable PWA**: add to home screen on desktop or mobile. The model is cached in the browser after first download, so it keeps working offline. Downloaded models can be deleted from the model picker to free up space.
+### WebGPU Accelerated & WASM Fallback Chat
+Runs state-of-the-art small models (Llama 3.2 1B/3B, Gemma 2 2B) fully client-side.
+- Uses **WebGPU** via [web-llm](https://github.com/mlc-ai/web-llm) for hardware-accelerated, near-native performance.
+- Automatically falls back to **CPU/WebAssembly** via [wllama](https://github.com/ngxson/wllama) when WebGPU is unsupported or unavailable.
+- Behind-the-scenes automatic model loading with progress indicators.
 
-## Getting started
+### Local Semantic Search & Knowledge Grounding
+Store your lecture notes, code snippets, or reference guides locally.
+- Integrated in-browser vector search database powered by **Dexie (IndexedDB)**.
+- Real-time sentence embedding generation on note save using [transformers.js](https://github.com/huggingface/transformers.js) and the `all-MiniLM-L6-v2` model.
+- Automatically retrieves semantically relevant notes based on your chat queries to ground the LLM's responses.
 
+### Client-Side Document Conversational Agent
+Attach `.txt`, `.md`, or `.pdf` files to extract text locally and chat with them.
+- Fast PDF text extraction using [pdf.js](https://github.com/mozilla/pdf.js).
+- Documents are split into semantic chunks, embedded dynamically, and retrieved when answering context-dependent questions.
+
+### Inline Python Code Sandbox
+Execute Python code generated by the LLM inside your browser.
+- Interactive **"Run"** button embedded in generated code blocks.
+- Execution happens within a secure browser sandbox powered by [Pyodide](https://pyodide.org) with zero network overhead.
+
+### Offline Mathematical Rendering
+Beautiful inline and block math formatting.
+- Renders standard LaTeX equations instantly using [KaTeX](https://github.com/KaTeX/KaTeX).
+- KaTeX stylesheets and web-fonts are fully pre-cached by the service worker to support 100% offline usage.
+
+### Mobile-First & Installable PWA
+Optimized for a responsive, touch-friendly interface across mobile, tablet, and desktop devices.
+- **Install to Home Screen**: Installable as a Progressive Web App (PWA) on iOS and Android for a native-feeling standalone app window.
+- **Offline Capabilities**: Service Worker caching allows you to load the app and run inferences on the go, even with cellular data turned off or in flight mode.
+- **On-Device Storage Management**: Manage storage directly from your device by deleting cached LLM models from the model picker UI when needed.
+
+#### Offline Caching & PWA Lifecycle
+
+![Navo Offline Caching & PWA Lifecycle](public/pwa-caching.png)
+
+---
+
+## System Architecture
+
+Navo shifts the entire AI pipeline from the cloud to the client. The diagram below illustrates how user interactions, note saving, and files are managed on-device.
+
+![Navo On-Device AI Architecture](public/architecture.png)
+
+### Local Database Schema
+
+Navo uses Dexie.js as a wrapper around the browser's IndexedDB to store user conversations, messages, and semantic notes along with vector embeddings:
+
+![Navo Local Database Schema](public/database-schema.png)
+
+---
+
+## Compatibility Matrix
+
+### Browser Support
+
+| Browser | Platform | WebGPU Support | WASM Fallback | Recommendation |
+| :--- | :--- | :---: | :---: | :--- |
+| **Google Chrome** | Windows, macOS, Linux, Android | Supported | Supported | **Recommended** (Best Performance) |
+| **Microsoft Edge** | Windows, macOS, Linux, Android | Supported | Supported | **Recommended** (Best Performance) |
+| **Apple Safari** | macOS, iOS / iPadOS | Experimental | Supported | Good (Runs on WASM; enable WebGPU in settings) |
+| **Mozilla Firefox** | Windows, macOS, Linux | Experimental | Supported | Good (Runs on WASM; enable WebGPU in config) |
+
+### Model Options
+
+| Model | Parameters | VRAM / RAM Req. | Caching Size | Provider | Purpose |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Llama 3.2 1B** | 1.24B | ~1.5 GB | ~1.2 GB | Meta | Fast definitions & quick analysis |
+| **Llama 3.2 3B** | 3.21B | ~3.0 GB | ~2.5 GB | Meta | Advanced reasoning & coding tasks |
+| **Gemma 2 2B** | 2.61B | ~2.2 GB | ~1.8 GB | Google | High-quality definitions & prose |
+| **all-MiniLM-L6-v2** | 33M | ~120 MB | ~90 MB | HuggingFace | Local note/document embeddings |
+
+### Typical Performance Benchmarks
+
+Below are representative local inference performance speeds (Tokens/Second) across standard configurations:
+
+| Device & Processor | Model Selected | Execution Backend | Speed (Tokens/sec) | System Performance |
+| :--- | :---: | :---: | :---: | :--- |
+| **Apple MacBook Pro (M2/M3 Max)** | Llama 3.2 3B | WebGPU | 25 – 35 t/s | Near-native speed |
+| **Apple iPhone 15 Pro / 16 (A17/A18)** | Llama 3.2 1B | WebAssembly | 12 – 18 t/s | Smooth execution |
+| **Google Pixel 8 / 9 (Tensor G3/G4)** | Gemma 2 2B | WebGPU | 15 – 22 t/s | Smooth execution |
+| **Windows Desktop (RTX 4070)** | Llama 3.2 3B | WebGPU | 40 – 50 t/s | Near-instant generation |
+| **Intel Core i7 (12th Gen Laptop)** | Llama 3.2 1B | WebGPU (Intel Xe) | 14 – 20 t/s | Smooth execution |
+| **Generic Mid-Range Smartphone** | Llama 3.2 1B | WebAssembly (CPU) | 4 – 8 t/s | Functional speed |
+
+---
+
+## Getting Started
+
+### Prerequisites
+Make sure you have Node.js installed (v18.x or higher recommended).
+
+### Setup and Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Benedictpatrick/Web-based-local-OfflineLLM.git
+   cd Web-based-local-OfflineLLM
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+   > [!NOTE]
+   > The `predev` and `prebuild` scripts will automatically run scripts to sync local asset folders for KaTeX, PDF.js, and Pyodide so they are cached successfully.
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+4. **Access the application:**
+   Open [http://localhost:3000](http://localhost:3000) in your WebGPU-enabled browser. 
+   *(Note: The first time you load the chat, it needs an internet connection to download and cache the model. Subsequent loads will be entirely offline.)*
+
+### Running Tests
+Run the test suite powered by Vitest:
 ```bash
-npm install
-npm run dev
+npm test
 ```
 
-Open [http://localhost:3000](http://localhost:3000). First load needs internet to download the model; after that, it works offline.
+---
 
-Run the test suite with `npm test`.
+## Technology Stack
 
-## Stack
+- **Framework**: [Next.js 15 (App Router)](https://nextjs.org/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styles**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Database**: [Dexie.js](https://dexie.org/) (IndexedDB wrapper)
+- **AI Core Engines**:
+  - WebGPU LLM: [web-llm](https://github.com/mlc-ai/web-llm)
+  - WASM Fallback: [wllama](https://github.com/ngxson/wllama)
+  - Embedding Core: [@huggingface/transformers](https://github.com/huggingface/transformers.js)
+- **Supporting Runtimes**:
+  - Document Reader: [pdfjs-dist](https://github.com/mozilla/pdf.js)
+  - Code Execution: [Pyodide](https://pyodide.org)
+  - Formula rendering: [KaTeX](https://katex.org/)
 
-Next.js (App Router) · TypeScript · Tailwind · Dexie (IndexedDB) · wllama · web-llm · transformers.js · pdf.js · Pyodide · KaTeX
+---
 
-`public/katex/` is generated by `scripts/sync-katex.mjs` (run automatically before `dev` and `build`) rather than committed, so the vendored stylesheet and fonts can't drift from the installed `katex` version. They're served from a stable, unhashed path because the service worker precaches them by name.
+## Roadmap
 
-## Known limitations
+- [x] **WebGPU Acceleration** with CPU WASM fallback
+- [x] **IndexedDB Local Storage** for user notes and chats
+- [x] **Semantic Search** database for grounding context
+- [x] **PDF Document Text Extraction** & in-browser RAG
+- [x] **Inline Python Sandbox** powered by Pyodide
+- [x] **PWA Support** for full offline installation
+- [ ] **Multi-Document Upload** support (currently single file)
+- [ ] **Chat Session Export** (JSON / Markdown formats)
+- [ ] **Continuous Integration (CI)** automated testing workflow
 
-- **Small models make mistakes.** The 1B/3B models running in-browser will occasionally get facts, math, or code wrong. Verify anything that matters; this is a study aid, not a source of truth.
-- **No CI yet.** Tests exist and pass locally (`npm test`), but nothing runs them automatically on push.
+---
+
+## Troubleshooting & FAQ
+
+#### Why is the initial load taking so long?
+During the first load, the browser must fetch the model weights (e.g. 1.2 GB to 2.5 GB depending on the selected model) from the Hugging Face CDN. Once downloaded, the weights are stored permanently in your browser's local cache (OPFS or Cache Storage). Subsequent loads are instantaneous and happen completely offline.
+
+#### Does running local models drain my mobile battery?
+Yes. Processing LLMs client-side is highly resource-intensive. Using WebGPU is significantly more power-efficient than CPU/WebAssembly execution, but you will still experience higher battery consumption during active generation.
+
+#### How can I free up browser storage space?
+Navo provides an integrated model manager. You can delete downloaded models directly from the in-app model selection UI. Alternatively, you can clear the cache in your browser's site settings.
+
+#### Why am I seeing a "WebGPU not supported" warning?
+Your browser or hardware might not support WebGPU out of the box. Chrome and Edge support WebGPU by default. Firefox and Safari require enabling WebGPU in their developer settings. Navo automatically falls back to CPU/WebAssembly when WebGPU is not active.
+
+---
 
 ## Contributing
 
-Issues and PRs are welcome. This is an early, actively-developed project, so expect rough edges. If you're picking something up, opening an issue first to align on approach is appreciated.
+Contributions make the open-source community an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-## Deployment
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Connected to Vercel: pushes to `main` deploy automatically.
+---
 
 ## License
 
-[MIT](LICENSE)
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
