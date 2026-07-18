@@ -42,7 +42,7 @@ export default function LoadingScreen({
           <p className="text-sm text-red-500">
             Couldn&apos;t load {modelLabel}
             {errorText ? `: ${errorText}` : ""}. Check your connection for the
-            first download — after that it works offline.
+            first download. After that it works offline.
           </p>
           <div className="flex items-center gap-3">
             <button
@@ -77,7 +77,7 @@ export default function LoadingScreen({
             )}
           </div>
           <p className="text-xs text-foreground-muted">
-            First load needs internet to download the model — after that it
+            First load needs internet to download the model. After that it
             works fully offline.
           </p>
         </div>
