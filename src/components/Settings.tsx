@@ -6,7 +6,7 @@ import { AVAILABLE_MODELS, deleteModelCache, isModelCached, type ModelId } from 
 import { haptic } from "@/lib/haptics";
 
 const REPO_URL = "https://github.com/Benedictpatrick/Web-based-local-OfflineLLM";
-const AUTHOR_NAME = "Benedict Patrick";
+const AUTHOR_NAME = "Benedict Patrick, Saidharshan";
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
