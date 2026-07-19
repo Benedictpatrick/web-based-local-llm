@@ -5,9 +5,10 @@ import Chat, { type ChatHandle } from "@/components/Chat";
 import ChatHistory from "@/components/ChatHistory";
 import Journal from "@/components/Journal";
 import Settings from "@/components/Settings";
+import TabSwitcher, { type TabId } from "@/components/TabSwitcher";
 
 export default function Home() {
-  const [tab, setTab] = useState<"chat" | "notes" | "settings">("chat");
+  const [tab, setTab] = useState<TabId>("chat");
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const chatRef = useRef<ChatHandle>(null);
@@ -32,38 +33,7 @@ export default function Home() {
           </button>
           <h1 className="truncate text-base font-semibold tracking-tight">Navo</h1>
         </div>
-        <nav className="flex shrink-0 gap-0.5 rounded-full bg-surface p-0.5 text-sm">
-          <button
-            className={`rounded-full px-2.5 py-1.5 transition-colors sm:px-3.5 ${
-              tab === "chat"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-foreground-muted hover:text-foreground"
-            }`}
-            onClick={() => setTab("chat")}
-          >
-            Chat
-          </button>
-          <button
-            className={`rounded-full px-2.5 py-1.5 transition-colors sm:px-3.5 ${
-              tab === "notes"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-foreground-muted hover:text-foreground"
-            }`}
-            onClick={() => setTab("notes")}
-          >
-            Notes
-          </button>
-          <button
-            className={`rounded-full px-2.5 py-1.5 transition-colors sm:px-3.5 ${
-              tab === "settings"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-foreground-muted hover:text-foreground"
-            }`}
-            onClick={() => setTab("settings")}
-          >
-            Settings
-          </button>
-        </nav>
+        <TabSwitcher active={tab} onChange={setTab} />
       </header>
       <main className="min-h-0 flex-1">
         <div className={tab === "chat" ? "h-full" : "hidden"}>
