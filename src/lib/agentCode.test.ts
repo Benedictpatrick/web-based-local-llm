@@ -14,12 +14,12 @@ describe("extractSolePythonBlock", () => {
     expect(extractSolePythonBlock("\n\n```python\nprint(1)\n```\n\n")).toBe("print(1)");
   });
 
-  it("returns null when there's prose before the block", () => {
-    expect(extractSolePythonBlock("Here's the code:\n```python\nprint(1)\n```")).toBeNull();
+  it("tolerates prose before the block", () => {
+    expect(extractSolePythonBlock("Here's the code:\n```python\nprint(1)\n```")).toBe("print(1)");
   });
 
-  it("returns null when there's prose after the block", () => {
-    expect(extractSolePythonBlock("```python\nprint(1)\n```\nThat should work.")).toBeNull();
+  it("tolerates prose after the block", () => {
+    expect(extractSolePythonBlock("```python\nprint(1)\n```\nThat should work.")).toBe("print(1)");
   });
 
   it("returns null for a non-python fence", () => {
