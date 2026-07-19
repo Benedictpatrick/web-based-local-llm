@@ -7,6 +7,7 @@ import {
   isModelCached,
   type ModelId,
 } from "@/lib/llm";
+import { haptic } from "@/lib/haptics";
 
 export default function ModelPicker({
   value,
@@ -58,6 +59,7 @@ export default function ModelPicker({
     if (!window.confirm(`Delete the downloaded "${label}" model? You'll need to re-download it to use it again.`)) {
       return;
     }
+    haptic("warning");
     setDeletingId(id);
     try {
       await deleteModelCache(id);
@@ -114,6 +116,7 @@ export default function ModelPicker({
                 type="button"
                 className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 onClick={() => {
+                  if (m.id !== value) haptic("tap");
                   onChange(m.id);
                   setOpen(false);
                 }}

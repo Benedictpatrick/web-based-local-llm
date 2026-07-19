@@ -2,6 +2,7 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Conversation } from "@/lib/db";
+import { haptic } from "@/lib/haptics";
 
 type Bucket = { label: string; items: Conversation[] };
 
@@ -54,6 +55,7 @@ export default function ChatHistory({
 
   async function handleDelete(id: number) {
     if (!window.confirm("Delete this chat? This can't be undone.")) return;
+    haptic("warning");
     await db.chat.where("conversationId").equals(id).delete();
     await db.conversations.delete(id);
     if (id === currentConversationId) onNewChat();
@@ -79,6 +81,7 @@ export default function ChatHistory({
           <button
             className="flex-1 rounded-xl bg-accent px-3 py-2 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90"
             onClick={() => {
+              haptic("tap");
               onNewChat();
               onClose();
             }}
@@ -121,6 +124,7 @@ export default function ChatHistory({
                   <button
                     className="min-w-0 flex-1 truncate px-3 py-2.5 text-left text-sm"
                     onClick={() => {
+                      if (c.id !== currentConversationId) haptic("tap");
                       onSelect(c.id);
                       onClose();
                     }}

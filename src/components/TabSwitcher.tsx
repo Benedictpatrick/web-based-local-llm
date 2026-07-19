@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
+import { haptic } from "@/lib/haptics";
 
 export type TabId = "chat" | "notes" | "settings";
 
@@ -78,7 +79,10 @@ export default function TabSwitcher({
           className={`relative z-10 rounded-full px-2.5 py-1.5 transition-colors sm:px-3.5 ${
             active === id ? "text-foreground" : "text-foreground-muted hover:text-foreground"
           }`}
-          onClick={() => onChange(id)}
+          onClick={() => {
+            if (id !== active) haptic("tap");
+            onChange(id);
+          }}
         >
           {label}
         </button>

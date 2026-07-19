@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
 import { AVAILABLE_MODELS, deleteModelCache, isModelCached, type ModelId } from "@/lib/llm";
+import { haptic } from "@/lib/haptics";
 
 const REPO_URL = "https://github.com/Benedictpatrick/Web-based-local-OfflineLLM";
 const AUTHOR_NAME = "Benedict Patrick";
@@ -76,16 +77,19 @@ export default function Settings({ onChangeModel }: { onChangeModel: () => void 
 
   function handleDeleteClick(id: ModelId) {
     if (confirmDeleteId === id) {
+      haptic("warning");
       setConfirmDeleteId(null);
       handleDeleteModel(id);
       return;
     }
+    haptic("tap");
     setConfirmDeleteId(id);
     setTimeout(() => setConfirmDeleteId((cur) => (cur === id ? null : cur)), 4000);
   }
 
   function handleClearClick(target: "chat" | "notes") {
     if (confirmClear === target) {
+      haptic("warning");
       setConfirmClear(null);
       (target === "chat"
         ? Promise.all([db.chat.clear(), db.conversations.clear()])
@@ -96,6 +100,7 @@ export default function Settings({ onChangeModel }: { onChangeModel: () => void 
       });
       return;
     }
+    haptic("tap");
     setConfirmClear(target);
     setTimeout(() => setConfirmClear((cur) => (cur === target ? null : cur)), 4000);
   }
@@ -111,7 +116,10 @@ export default function Settings({ onChangeModel }: { onChangeModel: () => void 
               <button
                 type="button"
                 className="rounded-full border border-border px-3 py-1.5 text-xs transition-colors hover:bg-background"
-                onClick={onChangeModel}
+                onClick={() => {
+                  haptic("tap");
+                  onChangeModel();
+                }}
               >
                 Change model
               </button>

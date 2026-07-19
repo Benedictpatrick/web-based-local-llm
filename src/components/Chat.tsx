@@ -26,6 +26,7 @@ import { extractTextFromFile, chunkText } from "@/lib/fileExtraction";
 import { extractSolePythonBlock } from "@/lib/agentCode";
 import { runPython } from "@/lib/pythonRunner";
 import { transcribeAudio } from "@/lib/speechRecognition";
+import { haptic } from "@/lib/haptics";
 import ModelPicker from "@/components/ModelPicker";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -37,6 +38,7 @@ function CopyButton({ text }: { text: string }) {
       type="button"
       className="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs text-foreground-muted transition-colors hover:bg-surface hover:text-foreground"
       onClick={() => {
+        haptic("tap");
         navigator.clipboard.writeText(text).catch(() => {});
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
@@ -505,6 +507,7 @@ export default function Chat({
     const text = input.trim();
     if (!text || streaming || status !== "ready") return;
 
+    haptic("tap");
     setInput("");
 
     let activeConversationId = conversationId;
@@ -536,21 +539,25 @@ export default function Chat({
     const lastUser = [...all].reverse().find((m) => m.role === "user");
     if (!lastUser) return;
 
+    haptic("tap");
     await db.chat.delete(last.id);
     await generateReply(conversationId, lastUser.content);
   }
 
   function handleStop() {
+    haptic("tap");
     abortGeneration();
   }
 
   async function handleMicClick() {
     if (micState === "recording") {
+      haptic("tap");
       mediaRecorderRef.current?.stop();
       return;
     }
     if (micState !== "idle") return;
 
+    haptic("tap");
     setMicError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -575,10 +582,12 @@ export default function Chat({
             setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
             textareaRef.current?.focus();
           } else {
+            haptic("warning");
             setMicError("Didn't catch that — try again.");
           }
         } catch (err) {
           console.error(err);
+          haptic("warning");
           setMicError("Couldn't transcribe that. Try again.");
         } finally {
           URL.revokeObjectURL(url);
@@ -591,6 +600,7 @@ export default function Chat({
       setMicState("recording");
     } catch (err) {
       console.error(err);
+      haptic("warning");
       setMicError("Microphone access denied or unavailable.");
       setMicState("idle");
     }
