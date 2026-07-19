@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
 import { AVAILABLE_MODELS, deleteModelCache, isModelCached, type ModelId } from "@/lib/llm";
-import { haptic } from "@/lib/haptics";
+import { haptic, isHapticSupported } from "@/lib/haptics";
 
 const REPO_URL = "https://github.com/Benedictpatrick/Web-based-local-OfflineLLM";
 const AUTHOR_NAME = "Benedict Patrick";
@@ -52,6 +52,7 @@ export default function Settings({ onChangeModel }: { onChangeModel: () => void 
   const [confirmDeleteId, setConfirmDeleteId] = useState<ModelId | null>(null);
   const [confirmClear, setConfirmClear] = useState<"chat" | "notes" | null>(null);
   const [cleared, setCleared] = useState<"chat" | "notes" | null>(null);
+  const [hapticResult, setHapticResult] = useState<"accepted" | "rejected" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,6 +153,34 @@ export default function Settings({ onChangeModel }: { onChangeModel: () => void 
               }
             />
           ))}
+        </SectionCard>
+
+        <SectionCard title="Feel">
+          <Row
+            label="Haptic feedback"
+            description={
+              isHapticSupported()
+                ? hapticResult === "accepted"
+                  ? "Sent a vibrate command to your device just now — if you didn't feel it, check your phone's ringer/silent mode, not this app."
+                  : hapticResult === "rejected"
+                    ? "Your browser rejected the request. Vibration may be disabled for this site."
+                    : "Vibrates on send, tab switches, and confirmations."
+                : "Not supported in this browser (this is normal on iPhone — Safari doesn't support it)."
+            }
+            action={
+              isHapticSupported() ? (
+                <button
+                  type="button"
+                  className="rounded-full border border-border px-3 py-1.5 text-xs transition-colors hover:bg-background"
+                  onClick={() => setHapticResult(haptic("success") ? "accepted" : "rejected")}
+                >
+                  Test
+                </button>
+              ) : (
+                <span className="text-xs text-foreground-muted">—</span>
+              )
+            }
+          />
         </SectionCard>
 
         <SectionCard title="Data">

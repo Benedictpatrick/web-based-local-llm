@@ -6,9 +6,16 @@ const PATTERNS: Record<HapticPattern, number | number[]> = {
   warning: [15, 60, 15, 60, 15],
 };
 
-export function haptic(pattern: HapticPattern = "tap"): void {
-  if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+export function isHapticSupported(): boolean {
+  return typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
+}
+
+/** Returns whether the browser accepted the vibration request — not whether the device actually buzzed. */
+export function haptic(pattern: HapticPattern = "tap"): boolean {
+  if (!isHapticSupported()) return false;
   try {
-    navigator.vibrate(PATTERNS[pattern]);
-  } catch {}
+    return navigator.vibrate(PATTERNS[pattern]);
+  } catch {
+    return false;
+  }
 }
