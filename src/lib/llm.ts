@@ -66,6 +66,14 @@ function isMobileDevice(): boolean {
   return typeof navigator !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
 }
 
+/** True when the browser reports <=2GB of device memory. Under-reports on some devices
+ *  (deviceMemory is capped/rounded for fingerprinting) but is the best signal available. */
+function isLowMemoryDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const mem = (navigator as unknown as { deviceMemory?: number }).deviceMemory;
+  return typeof mem === "number" && mem <= 2;
+}
+
 export async function getDefaultModelId(): Promise<ModelId> {
   if (isMobileDevice()) return "llama3.2-1b";
   return (await hasWebGpu()) ? "llama3.2-3b" : "llama3.2-1b";
@@ -186,11 +194,12 @@ async function loadWasmEngine(
     );
 
     const isMobile = isMobileDevice();
-    const nCtx = isMobile ? 1024 : 2048;
+    const isLowMemory = isLowMemoryDevice();
+    const nCtx = isLowMemory ? 512 : isMobile ? 1024 : 2048;
 
     const loadParams = {
       n_ctx: nCtx,
-      n_batch: isMobile ? 128 : undefined,
+      n_batch: isLowMemory ? 64 : isMobile ? 128 : undefined,
       n_threads: isMobile ? 1 : undefined,
       progressCallback: onProgress
         ? ({ loaded, total }: { loaded: number; total: number }) =>

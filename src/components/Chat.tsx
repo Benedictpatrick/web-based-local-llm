@@ -663,6 +663,16 @@ export default function Chat({
             device, but you can pick a smaller one if downloads or loading are slow.
           </p>
         )}
+        {!hasLoadedOnce &&
+          (() => {
+            const memoryGb = getDeviceInfo().memoryGb;
+            return memoryGb !== null && memoryGb <= 2 ? (
+              <p className="max-w-xs text-xs text-amber-500">
+                Your device is reporting limited memory ({memoryGb}GB). Even the smallest model
+                may crash this tab — closing other apps and tabs first can help.
+              </p>
+            ) : null;
+          })()}
         <div className="flex w-full max-w-xs items-center gap-2">
           <ModelPicker
             value={modelId}
