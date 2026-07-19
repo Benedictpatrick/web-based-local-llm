@@ -1,9 +1,11 @@
 type HapticPattern = "tap" | "success" | "warning";
 
+// Durations are floored well above typical ERM motor spin-up time (~20-50ms) —
+// anything shorter is often accepted by the OS but never physically felt.
 const PATTERNS: Record<HapticPattern, number | number[]> = {
-  tap: 10,
-  success: [10, 40, 15],
-  warning: [15, 60, 15, 60, 15],
+  tap: 30,
+  success: [30, 50, 40],
+  warning: [40, 80, 40, 80, 40],
 };
 
 export function isHapticSupported(): boolean {
