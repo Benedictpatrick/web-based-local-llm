@@ -415,6 +415,11 @@ export default function Chat({
               scheduleFlush();
             }
             clearInterval(watchdog);
+            if (watchdogFired) {
+              if (attempt < MAX_STUCK_RETRIES) continue;
+              console.error("Generation stalled with no response");
+              full = full || "Generation stalled — please try again.";
+            }
             break;
           } catch (err) {
             clearInterval(watchdog);
