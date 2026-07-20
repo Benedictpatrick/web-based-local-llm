@@ -74,15 +74,17 @@ function CodeBlock({ language: rawLanguage, code }: { language: string; code: st
   const [copied, setCopied] = useState(false);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<{ output: string; ok: boolean } | null>(null);
+  const [stdin, setStdin] = useState("");
 
   const language = guessLanguage(rawLanguage, code);
   const runnable = RUNNABLE_LANGUAGES.has(language.toLowerCase());
+  const needsInput = runnable && /(^|[^.\w])input\s*\(/.test(code);
 
   async function handleRun() {
     setRunning(true);
     setResult(null);
     try {
-      setResult(await runPython(code));
+      setResult(await runPython(code, stdin));
     } finally {
       setRunning(false);
     }
@@ -99,7 +101,7 @@ function CodeBlock({ language: rawLanguage, code }: { language: string; code: st
               className="rounded px-1.5 py-0.5 transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
               onClick={handleRun}
               disabled={running}
-              title="Runs in your browser via Pyodide (experimental). The first run on this device downloads the Python runtime, which needs a network connection. Doesn't support input() — code that reads input will error."
+              title="Runs in your browser via Pyodide (experimental). The first run on this device downloads the Python runtime, which needs a network connection. For input(), type the values it should read into the input box, one per line."
             >
               {running ? "Running…" : "▶ Run"}
             </button>
@@ -131,6 +133,21 @@ function CodeBlock({ language: rawLanguage, code }: { language: string; code: st
           {code}
         </SyntaxHighlighter>
       </div>
+      {needsInput && (
+        <div className="border-t border-border px-3 py-2">
+          <label className="mb-1 block text-xs text-foreground-muted">
+            Input for input() — one value per line
+          </label>
+          <textarea
+            value={stdin}
+            onChange={(e) => setStdin(e.target.value)}
+            rows={2}
+            spellCheck={false}
+            placeholder="e.g. Alice"
+            className="w-full resize-y rounded-md border border-border bg-surface px-2 py-1 font-mono text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+        </div>
+      )}
       {result && (
         <pre
           className={`overflow-x-auto whitespace-pre-wrap border-t border-border px-3 py-2 font-mono text-xs ${

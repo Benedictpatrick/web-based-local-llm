@@ -38,12 +38,20 @@ export interface PythonRunResult {
   ok: boolean;
 }
 
-export async function runPython(code: string): Promise<PythonRunResult> {
+export async function runPython(code: string, stdin = ""): Promise<PythonRunResult> {
   const pyodide = await getPyodide();
   const lines: string[] = [];
   pyodide.setStdout({ batched: (line) => lines.push(line) });
   pyodide.setStderr({ batched: (line) => lines.push(line) });
-  pyodide.setStdin({ stdin: () => null });
+
+  // Feed the provided standard input to input() one line at a time. When the
+  // program reads past what was supplied, returning null signals EOF, which
+  // surfaces below as a clear note rather than a raw traceback.
+  const stdinLines = stdin.length > 0 ? stdin.split("\n") : [];
+  let stdinIndex = 0;
+  pyodide.setStdin({
+    stdin: () => (stdinIndex < stdinLines.length ? stdinLines[stdinIndex++] + "\n" : null),
+  });
 
   try {
     const result = await pyodide.runPythonAsync(code);
@@ -53,7 +61,17 @@ export async function runPython(code: string): Promise<PythonRunResult> {
     return { output: lines.join("\n").trim() || "(no output)", ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    lines.push(message);
+    // input() reads past the supplied lines and hits EOF. Replace the noisy
+    // traceback with a clear note and keep whatever the code printed first.
+    if (/EOFError/.test(message)) {
+      lines.push(
+        stdinLines.length > 0
+          ? "The program asked for more input than the box provided. Add another line to the input box, one value per line."
+          : "This code asks for input(). Type the values it should read into the input box below, one per line, then run it again."
+      );
+    } else {
+      lines.push(message);
+    }
     return { output: lines.join("\n").trim(), ok: false };
   }
 }
