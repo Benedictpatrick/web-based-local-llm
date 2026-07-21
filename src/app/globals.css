@@ -93,11 +93,27 @@ body {
   animation: shimmer-slide 1.2s ease-in-out infinite;
 }
 
-/* Dots flowing along a figure-8 path, forming the crossing-and-oval loader. */
+/* Dots flowing along a figure-8, forming the crossing-and-oval loader. Driven
+ * by transform (not offset-path) so it animates on the GPU compositor and stays
+ * smooth while model loading keeps the main thread busy. */
 @keyframes orbit-flow {
-  to {
-    offset-distance: 100%;
-  }
+  0% { transform: translate(52px, 0); }
+  6.25% { transform: translate(48px, 17px); }
+  12.5% { transform: translate(37px, 24px); }
+  18.75% { transform: translate(20px, 17px); }
+  25% { transform: translate(0, 0); }
+  31.25% { transform: translate(-20px, -17px); }
+  37.5% { transform: translate(-37px, -24px); }
+  43.75% { transform: translate(-48px, -17px); }
+  50% { transform: translate(-52px, 0); }
+  56.25% { transform: translate(-48px, 17px); }
+  62.5% { transform: translate(-37px, 24px); }
+  68.75% { transform: translate(-20px, 17px); }
+  75% { transform: translate(0, 0); }
+  81.25% { transform: translate(20px, -17px); }
+  87.5% { transform: translate(37px, -24px); }
+  93.75% { transform: translate(48px, -17px); }
+  100% { transform: translate(52px, 0); }
 }
 
 .orbit-loader {
@@ -108,12 +124,12 @@ body {
 
 .orbit-dot {
   position: absolute;
-  top: 0;
-  left: 0;
+  left: 60px;
+  top: 33px;
   border-radius: 9999px;
   background: color-mix(in srgb, var(--accent) 78%, white);
   box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 65%, transparent);
-  offset-path: path("M60 33 C84 9 114 9 114 33 C114 57 84 57 60 33 C36 9 6 9 6 33 C6 57 36 57 60 33 Z");
+  will-change: transform;
   animation: orbit-flow 2.6s linear infinite;
 }
 
