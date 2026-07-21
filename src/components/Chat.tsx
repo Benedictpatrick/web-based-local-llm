@@ -658,16 +658,13 @@ export default function Chat({
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         {!hasLoadedOnce && (
           <>
-            <div
-              aria-hidden="true"
-              className="mb-1 text-3xl font-bold tracking-tight text-foreground"
-            >
-              Navo
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/navo-wordmark.png" alt="Navo" aria-hidden="true" className="mb-1 h-10 w-auto" />
             <p className="max-w-xs text-sm text-foreground-muted">
               A private study assistant that runs entirely on this device. Nothing you type
               ever leaves your browser, and it keeps working offline.
             </p>
+            <p className="text-xs text-foreground-muted">Made by Benedict Patrick &amp; Saidharshan</p>
           </>
         )}
         <p className="mt-2 text-sm text-foreground-muted">
