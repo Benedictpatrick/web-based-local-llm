@@ -6,6 +6,14 @@ import type { MLCEngine } from "@mlc-ai/web-llm";
 
 const HF_BASE = "https://huggingface.co";
 
+export type ModelCategory =
+  | "tiny"
+  | "balanced"
+  | "powerful"
+  | "coding"
+  | "math"
+  | "reasoning";
+
 export interface ModelEntry {
   id: string;
   label: string;
@@ -17,6 +25,11 @@ export interface ModelEntry {
   file?: string;
   /** One-line blurb shown in the Model Hub browsing UI. */
   hubDescription?: string;
+  /** Approximate download/VRAM size in GB, for the Hub's size badge and the
+   *  low-memory-device warning. */
+  sizeGB: number;
+  /** Store-style genre tag shown on Hub cards. */
+  category: ModelCategory;
 }
 
 /** The original 3 models: hand-verified on both WebGPU and WASM, and the
@@ -28,6 +41,8 @@ export const AVAILABLE_MODELS: ModelEntry[] = [
     repo: "bartowski/Llama-3.2-1B-Instruct-GGUF",
     file: "Llama-3.2-1B-Instruct-Q4_K_M.gguf",
     mlcId: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+    sizeGB: 0.7,
+    category: "tiny",
   },
   {
     id: "gemma2-2b",
@@ -35,6 +50,8 @@ export const AVAILABLE_MODELS: ModelEntry[] = [
     repo: "bartowski/gemma-2-2b-it-GGUF",
     file: "gemma-2-2b-it-Q4_K_M.gguf",
     mlcId: "gemma-2-2b-it-q4f16_1-MLC",
+    sizeGB: 1.6,
+    category: "balanced",
   },
   {
     id: "llama3.2-3b",
@@ -42,6 +59,8 @@ export const AVAILABLE_MODELS: ModelEntry[] = [
     repo: "bartowski/Llama-3.2-3B-Instruct-GGUF",
     file: "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
     mlcId: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
+    sizeGB: 1.9,
+    category: "balanced",
   },
   // Model Hub additions below. WebGPU-only: mlcId values are copied verbatim
   // from @mlc-ai/web-llm's own prebuiltAppConfig.model_list, which is the
@@ -53,90 +72,120 @@ export const AVAILABLE_MODELS: ModelEntry[] = [
     label: "Llama 3.1 8B (powerful, ~4.9GB)",
     mlcId: "Llama-3.1-8B-Instruct-q4f16_1-MLC",
     hubDescription: "Meta's larger general-purpose model. Strong all-rounder if your device can take it.",
+    sizeGB: 4.9,
+    category: "powerful",
   },
   {
     id: "qwen2.5-7b",
     label: "Qwen 2.5 7B (powerful, ~5GB)",
     mlcId: "Qwen2.5-7B-Instruct-q4f16_1-MLC",
     hubDescription: "Alibaba's flagship small model. Excellent general reasoning and writing.",
+    sizeGB: 5,
+    category: "powerful",
   },
   {
     id: "qwen2.5-3b",
     label: "Qwen 2.5 3B (balanced, ~2.4GB)",
     mlcId: "Qwen2.5-3B-Instruct-q4f16_1-MLC",
     hubDescription: "A lighter Qwen 2.5, good middle ground between speed and quality.",
+    sizeGB: 2.4,
+    category: "balanced",
   },
   {
     id: "qwen2.5-0.5b",
     label: "Qwen 2.5 0.5B (tiny, ~0.9GB)",
     mlcId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
     hubDescription: "Very small and fast. Best for quick, simple questions on weaker devices.",
+    sizeGB: 0.9,
+    category: "tiny",
   },
   {
     id: "qwen2.5-coder-7b",
     label: "Qwen 2.5 Coder 7B (coding, ~5GB)",
     mlcId: "Qwen2.5-Coder-7B-Instruct-q4f16_1-MLC",
     hubDescription: "Tuned specifically for code generation and debugging.",
+    sizeGB: 5,
+    category: "coding",
   },
   {
     id: "qwen2.5-math-1.5b",
     label: "Qwen 2.5 Math 1.5B (math, ~1.6GB)",
     mlcId: "Qwen2.5-Math-1.5B-Instruct-q4f16_1-MLC",
     hubDescription: "Tuned specifically for math problem solving and step-by-step reasoning.",
+    sizeGB: 1.6,
+    category: "math",
   },
   {
     id: "phi-3.5-mini",
     label: "Phi 3.5 Mini (balanced, ~3.6GB)",
     mlcId: "Phi-3.5-mini-instruct-q4f16_1-MLC",
     hubDescription: "Microsoft's efficient mid-size model, strong for its footprint.",
+    sizeGB: 3.6,
+    category: "balanced",
   },
   {
     id: "phi-4-mini",
     label: "Phi 4 Mini (powerful, ~3.4GB)",
     mlcId: "Phi-4-mini-instruct-q4f16_1-MLC",
     hubDescription: "Microsoft's newest small model. Better reasoning than Phi 3.5 at a similar size.",
+    sizeGB: 3.4,
+    category: "powerful",
   },
   {
     id: "mistral-7b-v0.3",
     label: "Mistral 7B v0.3 (powerful, ~4.5GB)",
     mlcId: "Mistral-7B-Instruct-v0.3-q4f16_1-MLC",
     hubDescription: "A long-standing, well-rounded open model.",
+    sizeGB: 4.5,
+    category: "powerful",
   },
   {
     id: "gemma2-9b",
     label: "Gemma 2 9B (powerful, ~6.3GB)",
     mlcId: "gemma-2-9b-it-q4f16_1-MLC",
     hubDescription: "Google's larger Gemma 2. Needs a capable GPU but gives noticeably better answers.",
+    sizeGB: 6.3,
+    category: "powerful",
   },
   {
     id: "gemma3-1b",
     label: "Gemma 3 1B (tiny, ~0.7GB)",
     mlcId: "gemma3-1b-it-q4f16_1-MLC",
     hubDescription: "Google's newest generation at a very small size.",
+    sizeGB: 0.7,
+    category: "tiny",
   },
   {
     id: "smollm2-1.7b",
     label: "SmolLM2 1.7B (fast, ~1.7GB)",
     mlcId: "SmolLM2-1.7B-Instruct-q4f16_1-MLC",
     hubDescription: "Hugging Face's compact model, built to punch above its size.",
+    sizeGB: 1.7,
+    category: "tiny",
   },
   {
     id: "smollm2-360m",
     label: "SmolLM2 360M (tiny, ~0.4GB)",
     mlcId: "SmolLM2-360M-Instruct-q4f16_1-MLC",
     hubDescription: "Extremely small and fast. Best for simple tasks on low-power devices.",
+    sizeGB: 0.4,
+    category: "tiny",
   },
   {
     id: "deepseek-r1-qwen-7b",
     label: "DeepSeek R1 Distill Qwen 7B (reasoning, ~5GB)",
     mlcId: "DeepSeek-R1-Distill-Qwen-7B-q4f16_1-MLC",
     hubDescription: "Distilled from DeepSeek R1, shows its step-by-step reasoning before answering.",
+    sizeGB: 5,
+    category: "reasoning",
   },
   {
     id: "qwen3-4b",
     label: "Qwen 3 4B (balanced, ~3.4GB)",
     mlcId: "Qwen3-4B-q4f16_1-MLC",
     hubDescription: "The latest Qwen generation at a mid-range size.",
+    sizeGB: 3.4,
+    category: "balanced",
   },
 ];
 
@@ -442,6 +491,15 @@ export function getDeviceInfo(): { cores: number | null; memoryGb: number | null
     cores: navigator.hardwareConcurrency ?? null,
     memoryGb: (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? null,
   };
+}
+
+/** Rough "will this probably crash the tab" check for a model's size against
+ *  the browser's reported device memory. Chrome caps deviceMemory at 8GB for
+ *  fingerprinting reasons, so a reported 8 could mean much more — treated as
+ *  "enough" rather than guessed at. Unknown memory (Safari, etc.) never warns. */
+export function isLikelyTooLargeForDevice(sizeGB: number, memoryGb: number | null): boolean {
+  if (memoryGb === null || memoryGb >= 8) return false;
+  return sizeGB > memoryGb * 0.6;
 }
 
 export type ChatOptions = { temperature?: number };

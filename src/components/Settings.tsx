@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { embed } from "@/lib/embeddings";
-import { AVAILABLE_MODELS, deleteModelCache, isModelCached, type ModelId } from "@/lib/llm";
+import {
+  AVAILABLE_MODELS,
+  deleteModelCache,
+  getLoadedModelId,
+  isModelCached,
+  type ModelId,
+} from "@/lib/llm";
 import { isMemoryEnabled, setMemoryEnabled } from "@/lib/memory";
 import { getThemePreference, setThemePreference, type ThemePreference } from "@/lib/theme";
 import { haptic } from "@/lib/haptics";
@@ -95,6 +101,8 @@ export default function Settings({
   onChangeModel: () => void;
 }) {
   const [cached, setCached] = useState<Partial<Record<ModelId, boolean>>>({});
+  const [activeModelId, setActiveModelId] = useState<ModelId | null>(null);
+  const [showAllModels, setShowAllModels] = useState(false);
   const [deletingId, setDeletingId] = useState<ModelId | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<ModelId | null>(null);
   // Start from the server-safe default so hydration matches, then correct to the
@@ -144,6 +152,7 @@ export default function Settings({
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
+    const frame = requestAnimationFrame(() => setActiveModelId(getLoadedModelId()));
     for (const m of AVAILABLE_MODELS) {
       isModelCached(m.id).then((isCached) => {
         if (!cancelled) setCached((prev) => ({ ...prev, [m.id]: isCached }));
@@ -151,6 +160,7 @@ export default function Settings({
     }
     return () => {
       cancelled = true;
+      cancelAnimationFrame(frame);
     };
   }, [active]);
 
@@ -231,7 +241,10 @@ export default function Settings({
               </button>
             }
           />
-          {AVAILABLE_MODELS.map((m) => (
+          {(showAllModels
+            ? AVAILABLE_MODELS
+            : AVAILABLE_MODELS.filter((m) => cached[m.id] || m.id === activeModelId)
+          ).map((m) => (
             <Row
               key={m.id}
               label={m.label}
@@ -258,6 +271,41 @@ export default function Settings({
               }
             />
           ))}
+          {!showAllModels && (
+            <Row
+              label={`Show all ${AVAILABLE_MODELS.length} models`}
+              description="Browse everything available, including ones you haven't downloaded."
+              action={
+                <button
+                  type="button"
+                  className="rounded-full border border-border px-3 py-1.5 text-xs transition-colors hover:bg-background"
+                  onClick={() => {
+                    haptic("tap");
+                    setShowAllModels(true);
+                  }}
+                >
+                  Expand
+                </button>
+              }
+            />
+          )}
+          {showAllModels && (
+            <Row
+              label="Showing all models"
+              action={
+                <button
+                  type="button"
+                  className="rounded-full border border-border px-3 py-1.5 text-xs transition-colors hover:bg-background"
+                  onClick={() => {
+                    haptic("tap");
+                    setShowAllModels(false);
+                  }}
+                >
+                  Collapse
+                </button>
+              }
+            />
+          )}
         </SectionCard>
 
         <SectionCard title="Memory">
