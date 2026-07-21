@@ -721,6 +721,17 @@ export default function Chat({
             }}
             onBrowseMore={onBrowseModelHub}
           />
+          <button
+            type="button"
+            className="shrink-0 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90"
+            onClick={() => {
+              haptic("tap");
+              setChangingModel(false);
+              handleLoadModel(modelId);
+            }}
+          >
+            Load
+          </button>
         </div>
         {hasLoadedOnce && (
           <button

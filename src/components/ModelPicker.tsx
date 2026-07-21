@@ -35,7 +35,9 @@ export default function ModelPicker({
   const [open, setOpen] = useState(false);
   const [cached, setCached] = useState<Partial<Record<ModelId, boolean>>>({});
   const [deletingId, setDeletingId] = useState<ModelId | null>(null);
+  const [triggerWidth, setTriggerWidth] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const selected = AVAILABLE_MODELS.find((m) => m.id === value);
   const selectedDisplay = selected ? modelDisplayParts(selected) : null;
   const listedModels = AVAILABLE_MODELS.filter(
@@ -53,6 +55,14 @@ export default function ModelPicker({
     return () => {
       cancelled = true;
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const id = requestAnimationFrame(() => {
+      if (triggerRef.current) setTriggerWidth(triggerRef.current.getBoundingClientRect().width);
+    });
+    return () => cancelAnimationFrame(id);
   }, [open]);
 
   useEffect(() => {
@@ -90,6 +100,7 @@ export default function ModelPicker({
     <div ref={rootRef} className="relative min-w-0">
       {variant === "chip" ? (
         <button
+          ref={triggerRef}
           type="button"
           className="glass-chip flex min-w-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-colors hover:text-foreground disabled:opacity-50"
           onClick={() => setOpen((o) => !o)}
@@ -117,6 +128,7 @@ export default function ModelPicker({
         </button>
       ) : (
         <button
+          ref={triggerRef}
           type="button"
           className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover disabled:opacity-50"
           onClick={() => setOpen((o) => !o)}
@@ -156,8 +168,9 @@ export default function ModelPicker({
       {open && (
         <div
           role="listbox"
+          style={triggerWidth ? { width: Math.max(triggerWidth, 200) } : undefined}
           className={`absolute top-full z-10 mt-2 max-h-[13.5rem] overflow-y-auto rounded-2xl border border-border bg-background py-1.5 shadow-lg ${
-            variant === "chip" ? "w-64 max-w-[80vw]" : "w-72 max-w-[80vw]"
+            triggerWidth ? "max-w-[90vw]" : variant === "chip" ? "w-64 max-w-[80vw]" : "w-72 max-w-[80vw]"
           }`}
         >
           {listedModels.map((m) => {
