@@ -6,11 +6,12 @@
 
 ### *A Private, Local-First AI Assistant Operating 100% In Your Browser on Desktop & Mobile*
 
-## 🌐 [**navoai.space**](https://navoai.space)
+<a href="https://navoai.space">
+  <img src="public/cta-button.png" alt="Try Navo AI live at navoai.space" width="480">
+</a>
 
-### [**→ Try Navo AI live, right now, free, no signup →**](https://navoai.space)
+Free. No signup. Runs entirely in your browser.
 
-[![Live Site](https://img.shields.io/badge/🌐%20Live%20Site-navoai.space-77F62B?style=for-the-badge)](https://navoai.space)
 [![GitHub Stars](https://img.shields.io/github/stars/Benedictpatrick/Web-based-local-OfflineLLM?style=for-the-badge&color=yellow&label=Stars)](https://github.com/Benedictpatrick/Web-based-local-OfflineLLM/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Framework-Next.js%2015-black?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
