@@ -217,6 +217,19 @@ export type ModelId = (typeof AVAILABLE_MODELS)[number]["id"];
 export function isWebgpuOnly(model: Pick<ModelEntry, "repo" | "file">): boolean {
   return !model.repo || !model.file;
 }
+
+/** Splits a label like "Llama 3.2 3B (better quality, ~1.9GB)" into a clean
+ *  name and a "qualifier · size" meta string, so callers can show the size
+ *  as a muted secondary line/badge instead of cramming it into the name. */
+export function modelDisplayParts(model: Pick<ModelEntry, "label">): {
+  name: string;
+  meta: string | null;
+} {
+  const match = model.label.match(/^(.*?)\s*\(([^,]+),\s*~?([\d.]+)\s*GB\)\s*$/);
+  if (!match) return { name: model.label, meta: null };
+  const [, name, qualifier, size] = match;
+  return { name, meta: `${qualifier} · ${size} GB` };
+}
 export type ProgressInfo = { loaded: number; total: number; text?: string };
 
 export type GenerationStats = {

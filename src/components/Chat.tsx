@@ -19,6 +19,7 @@ import {
   requestPersistentStorage,
   isWasmSupported,
   loadEngine,
+  modelDisplayParts,
   streamChat,
 } from "@/lib/llm";
 import { topRelevantEntries, embedChunks, topRelevantChunks, type TextChunk } from "@/lib/retrieval";
@@ -673,7 +674,15 @@ export default function Chat({
               A private study assistant that runs entirely on this device. Nothing you type
               ever leaves your browser, and it keeps working offline.
             </p>
-            <p className="text-xs text-foreground-muted">Made by Benedict Patrick &amp; Saidharshan</p>
+            <div className="mt-3 flex flex-col items-center gap-1.5">
+              <div className="h-px w-10 bg-border" />
+              <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground-muted/70">
+                Made by
+              </p>
+              <p className="text-xs font-medium text-foreground-muted">
+                Benedict Patrick &amp; Saidharshan
+              </p>
+            </div>
           </>
         )}
         <p className="mt-2 text-sm text-foreground-muted">
@@ -681,8 +690,12 @@ export default function Chat({
         </p>
         {!hasLoadedOnce && (
           <p className="max-w-xs text-xs text-foreground-muted">
-            {AVAILABLE_MODELS.find((m) => m.id === modelId)?.label} is recommended for this
-            device, but you can pick a smaller one if downloads or loading are slow.
+            {(() => {
+              const rec = AVAILABLE_MODELS.find((m) => m.id === modelId);
+              return rec ? modelDisplayParts(rec).name : modelId;
+            })()}{" "}
+            is recommended for this device, but you can pick a smaller one if downloads or
+            loading are slow.
           </p>
         )}
         {!hasLoadedOnce &&

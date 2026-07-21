@@ -9,11 +9,13 @@ import {
   deleteModelCache,
   getLoadedModelId,
   isModelCached,
+  modelDisplayParts,
   type ModelId,
 } from "@/lib/llm";
 import { isMemoryEnabled, setMemoryEnabled } from "@/lib/memory";
 import { getThemePreference, setThemePreference, type ThemePreference } from "@/lib/theme";
 import { useInstallPrompt } from "@/lib/useInstallPrompt";
+import BrandMark from "@/components/BrandMark";
 import { haptic } from "@/lib/haptics";
 
 const REPO_URL = "https://github.com/Benedictpatrick/Web-based-local-OfflineLLM";
@@ -36,15 +38,20 @@ function Row({
   label,
   description,
   action,
+  icon,
 }: {
   label: string;
   description?: string;
   action: React.ReactNode;
+  icon?: React.ReactNode;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-3">
       <div className="min-w-0">
-        <p className="text-[15px]">{label}</p>
+        <p className="flex items-center gap-1.5 text-[15px]">
+          {icon}
+          {label}
+        </p>
         {description && <p className="mt-0.5 text-xs text-foreground-muted">{description}</p>}
       </div>
       <div className="shrink-0">{action}</div>
@@ -281,11 +288,15 @@ export default function Settings({
           {(showAllModels
             ? AVAILABLE_MODELS
             : AVAILABLE_MODELS.filter((m) => cached[m.id] || m.id === activeModelId)
-          ).map((m) => (
+          ).map((m) => {
+            const { name, meta } = modelDisplayParts(m);
+            const status = cached[m.id] ? "Downloaded on this device" : "Not downloaded";
+            return (
             <Row
               key={m.id}
-              label={m.label}
-              description={cached[m.id] ? "Downloaded on this device" : "Not downloaded"}
+              icon={<BrandMark provider={m.provider} size={14} />}
+              label={name}
+              description={meta ? `${meta} · ${status}` : status}
               action={
                 cached[m.id] ? (
                   <button
@@ -307,7 +318,8 @@ export default function Settings({
                 )
               }
             />
-          ))}
+            );
+          })}
           {!showAllModels && (
             <Row
               label={`Show all ${AVAILABLE_MODELS.length} models`}
