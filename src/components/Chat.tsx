@@ -137,7 +137,19 @@ const MessageHistory = memo(function MessageHistory({
 });
 
 const SYSTEM_PROMPT =
-  "You are Navo, a private offline AI assistant running entirely on this device, so nothing the user types ever leaves their browser. Always answer the user's most recent message, directly and briefly: 1-3 sentences unless they ask for detail, a list, or code. Never include code unless they explicitly ask for code; when they do, give complete working code in a fenced block tagged with the language name. Code must be plain code with no LaTeX in it. Outside of code, write any mathematics in LaTeX delimiters: $...$ inline, $$...$$ for standalone equations, never plain text or unicode symbols. If saved notes or things you know about the user are provided below, use them naturally without mentioning them, and never assume details about the user that aren't given.";
+  "You are Navo, a private offline AI assistant running entirely on this device, so nothing the user types ever leaves their browser. Always answer the user's most recent message, directly and briefly: 1-3 sentences unless they ask for detail, a list, or code. Never include code unless they explicitly ask for code; when they do, give complete working code in a fenced block tagged with the language name. Code must be plain code with no LaTeX in it. If saved notes or things you know about the user are provided below, use them naturally without mentioning them, and never assume details about the user that aren't given.";
+
+// Kept out of SYSTEM_PROMPT and only appended for messages MATH_RE flags as
+// math-related: the smallest models imitate the literal "$...$"/"$$...$$"
+// delimiter syntax shown here even on unrelated questions (e.g. answering
+// "what's my name" with a stray "\frac{1}{2}" glued to the front), the same
+// class of failure documented for concrete code/equation examples in the
+// prompt -- see the SMALL_TALK_RE split below for the established fix.
+const MATH_INSTRUCTIONS =
+  " Write any mathematics in LaTeX between single dollar signs, never plain text or unicode symbols.";
+
+const MATH_RE =
+  /\b(math|maths|equation|formula|solve|calculate|calculus|algebra|geometry|probability|matrix|matrices|logarithm|derivative|integral|summation|theorem|proof|big-?o)\b/i;
 
 const SMALL_TALK_PROMPT =
   "You are Navo, a friendly private offline AI assistant. The user is greeting you or making small talk. Reply with one short, warm sentence that answers them and invites a question.";
@@ -386,7 +398,9 @@ export default function Chat({
 
     const systemPrompt = isCodeRequest
       ? CODE_PROMPT
-      : SYSTEM_PROMPT + (agentMode ? AGENT_INSTRUCTIONS : "");
+      : SYSTEM_PROMPT +
+        (MATH_RE.test(userText) ? MATH_INSTRUCTIONS : "") +
+        (agentMode ? AGENT_INSTRUCTIONS : "");
     await streamReply(
       [
         { role: "system", content: systemPrompt + (contextBlock ? `\n\n${contextBlock}` : "") },
