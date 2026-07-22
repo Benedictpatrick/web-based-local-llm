@@ -1,5 +1,7 @@
 "use client";
 
+import OrbitLoader from "./OrbitLoader";
+
 /**
  * The 5-second branded entrance shown only when switching INTO Navo Research
  * (never on the way back to plain Navo, which keeps its quick ~550ms beat).
@@ -22,6 +24,7 @@ export default function ResearchSplash() {
         </p>
         <span className="research-splash__underline inline-block h-[2px] rounded-full bg-accent" />
       </div>
+      <OrbitLoader className="research-splash__orbit scale-75" />
     </div>
   );
 }

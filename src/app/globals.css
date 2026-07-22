@@ -192,6 +192,15 @@ body {
   100% { width: 40px; opacity: 0; }
 }
 
+/* Ambient "still working" motion for the hold period, so the splash doesn't
+ * read as a static, frozen image for its ~3s middle stretch. */
+@keyframes research-splash-orbit {
+  0%, 40% { opacity: 0; }
+  52% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .research-splash {
   background: #000;
   animation: research-splash-overlay 5000ms ease-in-out forwards;
@@ -212,11 +221,18 @@ body {
   animation: research-splash-underline 5000ms ease-out forwards;
 }
 
+.research-splash__orbit {
+  opacity: 0;
+  margin-top: 1.5rem;
+  animation: research-splash-orbit 5000ms ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .research-splash,
   .research-splash__wordmark,
   .research-splash__label,
-  .research-splash__underline {
+  .research-splash__underline,
+  .research-splash__orbit {
     animation: none;
     opacity: 1;
   }
