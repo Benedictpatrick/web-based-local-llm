@@ -10,7 +10,7 @@
  */
 export default function ResearchSplash() {
   return (
-    <div className="research-splash absolute inset-0 z-30 flex flex-col items-center justify-center gap-4">
+    <div className="research-splash fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4">
       <img
         src="/navo-wordmark.png"
         alt="Navo"
