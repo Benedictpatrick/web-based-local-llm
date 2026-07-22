@@ -118,8 +118,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      {/* eslint-disable-next-line @next/next/no-css-tags */}
-      <link rel="stylesheet" href="/katex/katex.min.css" precedence="default" />
+      {/* Warms the connection to the model-download hosts before the user
+       * even opens the model picker, so the first download request doesn't
+       * pay for DNS + TLS negotiation. */}
+      <link rel="preconnect" href="https://huggingface.co" crossOrigin="anonymous" />
+      <link rel="preconnect" href="https://raw.githubusercontent.com" crossOrigin="anonymous" />
       <body className="min-h-full flex flex-col">
         <script
           type="application/ld+json"

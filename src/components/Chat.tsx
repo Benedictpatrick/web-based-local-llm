@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useEffect, useImperativeHandle, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useLiveQuery } from "dexie-react-hooks";
 import type { ChatCompletionMessage } from "@wllama/wllama/esm/index.js";
 import { db, type ChatMessage } from "@/lib/db";
@@ -35,9 +36,18 @@ import { runPython } from "@/lib/pythonRunner";
 import { transcribeAudio, type SpeechModelProgress } from "@/lib/speechRecognition";
 import { haptic } from "@/lib/haptics";
 import ModelPicker from "@/components/ModelPicker";
-import MarkdownMessage from "@/components/MarkdownMessage";
 import LoadingScreen from "@/components/LoadingScreen";
 import InstallBanner from "@/components/InstallBanner";
+
+// react-markdown + katex + the syntax-highlighter's language grammars are
+// ~650KB on their own and aren't needed until a message actually renders, so
+// they're split out of the initial bundle. loadMarkdownMessage() below warms
+// this chunk in parallel with the (much slower) model download, so it's
+// already cached by the time the first reply needs to render.
+const loadMarkdownMessage = () => import("@/components/MarkdownMessage");
+const MarkdownMessage = dynamic(loadMarkdownMessage, {
+  loading: () => <div className="h-5 w-32 animate-pulse rounded bg-surface" />,
+});
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -275,6 +285,7 @@ export default function Chat({
   }, [input]);
 
   async function handleLoadModel(idToLoad: ModelId = modelId) {
+    loadMarkdownMessage();
     setStatus("loading");
     setErrorText("");
     setProgress("");

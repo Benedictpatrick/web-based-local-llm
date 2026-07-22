@@ -213,6 +213,8 @@ const MarkdownErrorBoundary = unstable_catchError(MarkdownFallback);
 export default function MarkdownMessage({ content }: { content: string }) {
   return (
     <MarkdownErrorBoundary>
+      {/* eslint-disable-next-line @next/next/no-css-tags */}
+      <link rel="stylesheet" href="/katex/katex.min.css" precedence="default" />
       <div className="max-w-none text-[15px] leading-relaxed [&>*:last-child]:mb-0">
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
