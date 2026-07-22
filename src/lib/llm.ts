@@ -609,6 +609,96 @@ export function isLikelyTooLargeForDevice(sizeGB: number, memoryGb: number | nul
   return sizeGB > memoryGb * 0.6;
 }
 
+export type ModelPurpose = "general" | "coding" | "math" | "reasoning" | "explore";
+export type SpeedPreference = "fast" | "balanced" | "quality";
+
+export type ModelRecommendation = {
+  model: ModelEntry;
+  reason: string;
+};
+
+/**
+ * Turns a couple of quick answers into one specific model instead of leaving
+ * the user to compare 18 similar-looking cards. Only the 3 original baseline
+ * models (llama3.2-1b, gemma2-2b, llama3.2-3b) have a WASM fallback -- every
+ * other catalog entry is WebGPU-only -- so on a device without WebGPU this
+ * always falls back to one of those 3, regardless of purpose, rather than
+ * recommending something the device can't actually run.
+ */
+export function recommendModel(
+  purpose: ModelPurpose,
+  speed: SpeedPreference,
+  hasWebGpuSupport: boolean,
+  memoryGb: number | null
+): ModelRecommendation {
+  const byId = (id: ModelId) => AVAILABLE_MODELS.find((m) => m.id === id)!;
+
+  if (!hasWebGpuSupport) {
+    if (purpose === "explore" || speed === "fast") {
+      return {
+        model: byId("llama3.2-1b"),
+        reason:
+          "Your device doesn't support WebGPU, so the specialized models aren't available. This is the fastest model that still runs, over WASM/CPU.",
+      };
+    }
+    return {
+      model: byId("llama3.2-3b"),
+      reason:
+        "Your device doesn't support WebGPU, so the specialized models aren't available. This is the strongest general model that still runs, over WASM/CPU.",
+    };
+  }
+
+  switch (purpose) {
+    case "coding":
+      return {
+        model: byId("qwen2.5-coder-7b"),
+        reason: "The only model here built specifically for code: tuned for generation and debugging.",
+      };
+    case "math":
+      return {
+        model: byId("qwen2.5-math-1.5b"),
+        reason: "Small and tuned specifically for solving math problems step by step.",
+      };
+    case "reasoning":
+      return {
+        model: byId("deepseek-r1-qwen-7b"),
+        reason: "Distilled from DeepSeek R1: shows its reasoning before giving a final answer.",
+      };
+    case "explore":
+      return {
+        model: byId("smollm2-360m"),
+        reason: "The smallest model in the catalog (0.4GB) — the fastest way to try Navo out.",
+      };
+    case "general":
+    default: {
+      if (speed === "fast") {
+        return {
+          model: byId("llama3.2-1b"),
+          reason: "Meta's smallest Llama: quick replies without a long download.",
+        };
+      }
+      if (speed === "quality") {
+        const model = byId("qwen2.5-7b");
+        if (isLikelyTooLargeForDevice(model.sizeGB, memoryGb)) {
+          return {
+            model: byId("llama3.2-3b"),
+            reason:
+              "Your device reports limited memory, so the largest general model likely won't fit. This is the best generalist that should still run comfortably.",
+          };
+        }
+        return {
+          model,
+          reason: "Alibaba's flagship small model — excellent general reasoning and writing when you want the best answers.",
+        };
+      }
+      return {
+        model: byId("llama3.2-3b"),
+        reason: "The best balance of quality and speed for everyday chat.",
+      };
+    }
+  }
+}
+
 export type ChatOptions = { temperature?: number };
 
 export async function* streamChat(

@@ -15,6 +15,7 @@ import {
 } from "@/lib/llm";
 import { PROVIDER_NAMES, type Provider } from "@/lib/brandIcons";
 import BrandMark from "@/components/BrandMark";
+import ModelRecommender from "@/components/ModelRecommender";
 import { haptic } from "@/lib/haptics";
 
 const CATEGORY_LABELS: Record<ModelCategory, string> = {
@@ -41,6 +42,7 @@ export default function ModelHub({
   const [deletingId, setDeletingId] = useState<ModelId | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<ModelId | null>(null);
   const [openProvider, setOpenProvider] = useState<Provider | null>(null);
+  const [recommenderOpen, setRecommenderOpen] = useState(false);
   const memoryGb = getDeviceInfo().memoryGb;
 
   const modelsByProvider = useMemo(() => {
@@ -110,6 +112,30 @@ export default function ModelHub({
             on.
           </p>
         </div>
+        <button
+          type="button"
+          className="flex items-center gap-3 rounded-2xl border border-accent bg-accent/10 px-4 py-3 text-left transition-colors hover:bg-accent/15"
+          onClick={() => {
+            haptic("tap");
+            setRecommenderOpen(true);
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0 text-accent">
+            <path
+              d="M9.5 3a5.5 5.5 0 0 0-1.4 10.8c.3.1.4.3.4.6v.6a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-.6c0-.3.2-.5.4-.6A5.5 5.5 0 0 0 9.5 3ZM8.5 19h2m-2-2h2"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>
+            <span className="block text-sm font-medium">Not sure which to pick?</span>
+            <span className="block text-xs text-foreground-muted">
+              Answer 2 quick questions and get one specific recommendation.
+            </span>
+          </span>
+        </button>
         <div className="flex flex-col gap-2">
           {providers.map((p) => {
             const models = modelsByProvider.get(p) ?? [];
@@ -235,6 +261,11 @@ export default function ModelHub({
           })}
         </div>
       </div>
+      <ModelRecommender
+        open={recommenderOpen}
+        onClose={() => setRecommenderOpen(false)}
+        onSelectModel={onSelectModel}
+      />
     </div>
   );
 }
