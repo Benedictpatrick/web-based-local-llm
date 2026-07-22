@@ -93,14 +93,30 @@ describe("loadEngine WebGPU recovery", () => {
 
     const { loadEngine } = await import("./llm");
 
-    // qwen3-4b has no WASM fallback (no repo/file), so a WebGPU failure here
-    // must surface as "requires WebGPU" -- but should NOT permanently mark
-    // the whole session as WASM-only for later calls.
-    await expect(loadEngine("qwen3-4b")).rejects.toThrow(/requires WebGPU/);
+    // qwen3-4b has no WASM fallback (no repo/file). WebGPU is available here,
+    // so the failure must surface as the real underlying error (not the
+    // misleading "requires WebGPU" message, which implies the device can't
+    // run WebGPU at all) -- and must NOT permanently mark the whole session
+    // as WASM-only for later calls.
+    await expect(loadEngine("qwen3-4b")).rejects.toThrow(/transient WebGPU failure/);
     expect(createCalls).toBe(1);
 
     await loadEngine("qwen3-4b");
     expect(createCalls).toBe(2);
+  });
+
+  it("shows the real 'requires WebGPU' message only when WebGPU is actually unavailable", async () => {
+    Object.defineProperty(globalThis, "navigator", {
+      value: {},
+      configurable: true,
+    });
+    vi.doMock("@mlc-ai/web-llm", () => ({
+      CreateMLCEngine: vi.fn(),
+    }));
+
+    const { loadEngine } = await import("./llm");
+
+    await expect(loadEngine("qwen3-4b")).rejects.toThrow(/requires WebGPU/);
   });
 });
 

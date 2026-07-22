@@ -389,7 +389,13 @@ export async function loadEngine(
       loadedModelId = modelId;
       return;
     } catch (err) {
-      console.error("WebGPU engine failed, falling back to CPU/WASM:", err);
+      console.error("WebGPU engine failed:", err);
+      // No WASM fallback to drop to, so this load is done either way. Surface
+      // the real failure (network/CORS/stall/etc) instead of the misleading
+      // "requires WebGPU" message below, which is only true when WebGPU
+      // itself is unavailable -- not when it's available but this attempt
+      // failed for some other reason.
+      if (isWebgpuOnly(model)) throw err;
     }
   }
 
