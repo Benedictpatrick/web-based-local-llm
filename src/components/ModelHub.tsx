@@ -153,7 +153,13 @@ export default function ModelHub({
                 {isOpen && (
                   <div className="grid grid-cols-1 gap-3 border-t border-border p-3 sm:grid-cols-2">
                     {models.map((m) => {
-                      const gpuLocked = webgpu === false && isWebgpuOnly(m);
+                      // Locked until WebGPU support is confirmed (not just
+                      // "not yet known to be false"), so a WebGPU-only card
+                      // can't be tapped during the brief window before the
+                      // async support check resolves -- that race is exactly
+                      // how an unsupported device ends up starting a load
+                      // that immediately fails.
+                      const gpuLocked = webgpu !== true && isWebgpuOnly(m);
                       const isActive = m.id === activeModelId;
                       const tooLarge = !gpuLocked && isLikelyTooLargeForDevice(m.sizeGB, memoryGb);
                       return (
@@ -178,7 +184,7 @@ export default function ModelHub({
                           {m.hubDescription && (
                             <p className="mt-1 text-sm text-foreground-muted">{m.hubDescription}</p>
                           )}
-                          {gpuLocked && (
+                          {gpuLocked && webgpu === false && (
                             <p className="mt-1 text-xs text-amber-500">
                               Requires WebGPU, which isn&apos;t available on this device.
                             </p>
