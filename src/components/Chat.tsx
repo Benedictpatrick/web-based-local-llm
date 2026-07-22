@@ -192,6 +192,13 @@ const EXAMPLE_PROMPTS = [
   "Summarize my notes on OS scheduling",
 ];
 
+const RESEARCH_EXAMPLE_PROMPTS = [
+  "Compare renewable energy sources",
+  "Deep dive into the history of the internet",
+  "Research the pros and cons of remote work",
+  "Investigate how vaccines are developed",
+];
+
 const MAX_LOAD_RETRIES = 2;
 
 export interface ChatHandle {
@@ -1025,9 +1032,11 @@ export default function Chat({
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 py-6">
           {(messages ?? []).length === 0 && !streaming && (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 py-20 text-center">
-              <p className="text-sm text-foreground-muted">Ask anything to get started.</p>
+              <p className="text-sm text-foreground-muted">
+                {researchMode ? "What do you want to research?" : "Ask anything to get started."}
+              </p>
               <div className="flex flex-wrap justify-center gap-2 px-2">
-                {EXAMPLE_PROMPTS.map((prompt) => (
+                {(researchMode ? RESEARCH_EXAMPLE_PROMPTS : EXAMPLE_PROMPTS).map((prompt) => (
                   <button
                     key={prompt}
                     type="button"
