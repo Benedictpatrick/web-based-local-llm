@@ -36,6 +36,9 @@ export default function ModelPicker({
   const [cached, setCached] = useState<Partial<Record<ModelId, boolean>>>({});
   const [deletingId, setDeletingId] = useState<ModelId | null>(null);
   const [triggerWidth, setTriggerWidth] = useState<number | null>(null);
+  const [placement, setPlacement] = useState<{ openUpward: boolean; maxHeight: number } | null>(
+    null,
+  );
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const selected = AVAILABLE_MODELS.find((m) => m.id === value);
@@ -60,7 +63,24 @@ export default function ModelPicker({
   useEffect(() => {
     if (!open) return;
     const id = requestAnimationFrame(() => {
-      if (triggerRef.current) setTriggerWidth(triggerRef.current.getBoundingClientRect().width);
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setTriggerWidth(rect.width);
+
+      // Flip the panel upward when there isn't enough room below the
+      // trigger, and clamp its height to whichever side it opens on so it
+      // never runs off the top/bottom of the viewport.
+      const gap = 8;
+      const edgePadding = 8;
+      const preferredMaxHeight = 216; // 13.5rem
+      const spaceBelow = window.innerHeight - rect.bottom - gap - edgePadding;
+      const spaceAbove = rect.top - gap - edgePadding;
+      const openUpward = spaceBelow < 160 && spaceAbove > spaceBelow;
+      const available = openUpward ? spaceAbove : spaceBelow;
+      setPlacement({
+        openUpward,
+        maxHeight: Math.max(60, Math.min(preferredMaxHeight, available)),
+      });
     });
     return () => cancelAnimationFrame(id);
   }, [open]);
@@ -168,8 +188,13 @@ export default function ModelPicker({
       {open && (
         <div
           role="listbox"
-          style={triggerWidth ? { width: Math.max(triggerWidth, 200) } : undefined}
-          className={`absolute top-full z-10 mt-2 max-h-[13.5rem] overflow-y-auto rounded-2xl border border-border bg-background py-1.5 shadow-lg ${
+          style={{
+            ...(triggerWidth ? { width: Math.max(triggerWidth, 200) } : undefined),
+            ...(placement ? { maxHeight: placement.maxHeight } : undefined),
+          }}
+          className={`absolute z-10 max-h-[13.5rem] overflow-y-auto rounded-2xl border border-border bg-background py-1.5 shadow-lg ${
+            placement?.openUpward ? "bottom-full mb-2" : "top-full mt-2"
+          } ${
             triggerWidth ? "max-w-[90vw]" : variant === "chip" ? "w-64 max-w-[80vw]" : "w-72 max-w-[80vw]"
           }`}
         >
