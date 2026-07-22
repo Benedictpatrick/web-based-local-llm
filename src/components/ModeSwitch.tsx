@@ -29,6 +29,11 @@ export default function ModeSwitch({
   const navRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Partial<Record<ChatMode, HTMLButtonElement | null>>>({});
   const [pill, setPill] = useState<{ x: number; width: number } | null>(null);
+  // Pointerdown fires synchronously, well before the mode-switch splash
+  // mounts (and, on iOS, before CSS :active reliably kicks in on a plain
+  // button) -- so a tap always gets an instant visual press, independent of
+  // whether the actual switch is still 5s away from finishing.
+  const [pressed, setPressed] = useState<ChatMode | null>(null);
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -67,9 +72,14 @@ export default function ModeSwitch({
           role="tab"
           aria-selected={active === id}
           disabled={disabled}
-          className={`relative z-10 rounded-full px-2.5 py-1.5 font-medium whitespace-nowrap transition-colors disabled:opacity-50 sm:px-3 ${
+          className={`relative z-10 rounded-full px-2.5 py-1.5 font-medium whitespace-nowrap transition-all duration-100 disabled:opacity-50 sm:px-3 ${
             active === id ? "text-foreground" : "text-foreground-muted hover:text-foreground"
           }`}
+          style={{ transform: pressed === id ? "scale(0.9)" : "scale(1)" }}
+          onPointerDown={() => !disabled && setPressed(id)}
+          onPointerUp={() => setPressed(null)}
+          onPointerLeave={() => setPressed(null)}
+          onPointerCancel={() => setPressed(null)}
           onClick={() => {
             if (id !== active) onChange(id);
           }}
