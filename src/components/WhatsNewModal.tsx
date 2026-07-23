@@ -6,10 +6,10 @@ import { haptic } from "@/lib/haptics";
 /** Bump this when announcing something new so it shows again even for users
  *  who already passed the window for an earlier announcement. */
 const WHATS_NEW_KEY = "navo:whats-new:research-v1:first-seen-at";
-const SHOW_WINDOW_MS = 24 * 60 * 60 * 1000;
+const SHOW_WINDOW_MS = 2 * 24 * 60 * 60 * 1000;
 
-/** True on every app open during the first day after the user's first ever
- *  open following this announcement, false forever once that day is over. */
+/** True on every app open during the first two days after the user's first
+ *  ever open following this announcement, false forever once that's over. */
 export function shouldShowWhatsNew(): boolean {
   if (typeof window === "undefined") return false;
   const stored = window.localStorage.getItem(WHATS_NEW_KEY);
