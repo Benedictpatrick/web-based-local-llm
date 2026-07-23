@@ -1,17 +1,30 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Chat, { type ChatHandle } from "@/components/Chat";
 import ChatHistory from "@/components/ChatHistory";
 import ModelHub from "@/components/ModelHub";
 import Settings from "@/components/Settings";
 import TabSwitcher, { type TabId } from "@/components/TabSwitcher";
+import WhatsNewModal, { shouldShowWhatsNew } from "@/components/WhatsNewModal";
 
 export default function Home() {
   const [tab, setTab] = useState<TabId>("chat");
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const chatRef = useRef<ChatHandle>(null);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      if (shouldShowWhatsNew()) setWhatsNewOpen(true);
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  function closeWhatsNew() {
+    setWhatsNewOpen(false);
+  }
 
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground">
@@ -70,6 +83,15 @@ export default function Home() {
         currentConversationId={conversationId}
         onSelect={setConversationId}
         onNewChat={() => setConversationId(null)}
+      />
+      <WhatsNewModal
+        open={whatsNewOpen}
+        onClose={closeWhatsNew}
+        onTry={() => {
+          closeWhatsNew();
+          setTab("chat");
+          chatRef.current?.switchToResearch();
+        }}
       />
     </div>
   );

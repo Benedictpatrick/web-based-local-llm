@@ -206,6 +206,7 @@ const MAX_LOAD_RETRIES = 2;
 export interface ChatHandle {
   openModelPicker: () => void;
   loadModel: (id: ModelId) => void;
+  switchToResearch: () => void;
 }
 
 export default function Chat({
@@ -319,6 +320,7 @@ export default function Chat({
       setModelId(id);
       handleLoadModel(id);
     },
+    switchToResearch: () => handleModeSwitch("research"),
   }));
 
 
