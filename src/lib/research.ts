@@ -85,8 +85,9 @@ export interface RunResearchOptions {
   onSubQuestionStart: (index: number, question: string) => void;
   /** Fires right after the web search for a sub-question resolves (only ever
    *  called when `search` was provided), before that sub-question's generate
-   *  call starts -- lets the UI switch from a "searching" to "answering" state. */
-  onSearchDone?: (index: number, resultCount: number) => void;
+   *  call starts -- lets the UI switch from a "searching" to "answering" state
+   *  and render which sources came back. */
+  onSearchDone?: (index: number, sources: { title: string; url: string }[]) => void;
   onSubQuestionDone: (index: number, answer: string) => void;
   /** Live-streaming callback, mirrors generateOnce's onDelta for the composer's draft display. */
   onDelta?: (fullTranscriptSoFar: string) => void;
@@ -140,7 +141,7 @@ export async function runResearch(
       for (const s of sources) {
         if (!allSources.some((existing) => existing.url === s.url)) allSources.push(s);
       }
-      onSearchDone?.(i, sources.length);
+      onSearchDone?.(i, sources);
     }
 
     const prefix = parts.join("");

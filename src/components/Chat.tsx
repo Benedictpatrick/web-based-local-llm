@@ -525,10 +525,10 @@ export default function Chat({
             return next;
           });
         },
-        onSearchDone: (i) => {
+        onSearchDone: (i, sources) => {
           setResearchStatus((prev) => {
             const next = [...prev];
-            if (next[i]) next[i] = { ...next[i], state: "active" };
+            if (next[i]) next[i] = { ...next[i], state: "active", sources };
             return next;
           });
         },
