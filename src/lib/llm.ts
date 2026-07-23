@@ -597,11 +597,18 @@ export async function isModelCached(modelId: ModelId): Promise<boolean> {
   const model = AVAILABLE_MODELS.find((m) => m.id === modelId);
   if (!model) return false;
 
+  // getSize() only accepts the hashed storage key from getNameFromURL()/list(),
+  // not a raw URL -- wllama stores cached files under sha1(url), so passing
+  // the URL straight through always misses, even for a genuinely cached file.
   const wllamaCached = model.repo && model.file
     ? await importWllama()
-        .then(({ CacheManager }) =>
-          new CacheManager().getSize(`${HF_BASE}/${model.repo}/resolve/main/${model.file}`)
-        )
+        .then(async ({ CacheManager }) => {
+          const cacheManager = new CacheManager();
+          const key = await cacheManager.getNameFromURL(
+            `${HF_BASE}/${model.repo}/resolve/main/${model.file}`
+          );
+          return cacheManager.getSize(key);
+        })
         .then((size) => size > 0)
         .catch(() => false)
     : false;
