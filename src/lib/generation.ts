@@ -14,6 +14,10 @@ const MAX_GARBLED_RETRIES = 1;
 
 export interface GenerateOnceOptions {
   temperature?: number;
+  /** Caps this generation's length. Omit for the engine's normal default --
+   *  only set this where a small model rambling past its instructions would
+   *  actually break the surrounding UI (see research.ts's sub-question cap). */
+  maxTokens?: number;
   /** Called (rAF-batched) with the full accumulated text so far, for streaming display. */
   onDelta?: (fullTextSoFar: string) => void;
   /** Called when the engine was unloaded mid-generation (e.g. to free memory),
@@ -62,7 +66,10 @@ export async function generateOnce(
     };
 
     try {
-      for await (const chunk of streamChat(messages, { temperature: opts.temperature })) {
+      for await (const chunk of streamChat(messages, {
+        temperature: opts.temperature,
+        maxTokens: opts.maxTokens,
+      })) {
         sawFirstChunk = true;
         lastChunkAt = performance.now();
         full += chunk;

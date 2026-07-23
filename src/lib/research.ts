@@ -20,6 +20,11 @@ export const RESEARCH_PERSONA =
 
 export const MAX_SUBQUESTIONS = 3;
 
+/** ~2-4 sentences worth of headroom for a sub-question's answer -- small
+ *  models routinely ignore the "answer concisely" instruction in the prompt
+ *  below and ramble for hundreds of tokens per sub-question otherwise. */
+const SUBANSWER_MAX_TOKENS = 220;
+
 /**
  * Asks the model to break a topic into focused sub-questions. Falls back to
  * treating the topic as its own sole sub-question if the response doesn't
@@ -124,6 +129,12 @@ export async function runResearch(
     : "";
 
   const parts: string[] = [];
+  // Mirrors `parts` but without each sub-question's own "### question" header
+  // -- ResearchProgress (the checklist UI) already shows that question text
+  // for the step currently in flight, so echoing it again inline here would
+  // just duplicate it on screen for as long as that step stays "active"/
+  // "done". The persisted transcript still gets the real headers via `parts`.
+  const previewParts: string[] = [];
   const subAnswers: { question: string; answer: string }[] = [];
   // Collected across every sub-question and appended once, verbatim, at the
   // end -- deterministic, not model-generated, so links can't get mangled by
@@ -144,7 +155,7 @@ export async function runResearch(
       onSearchDone?.(i, sources);
     }
 
-    const prefix = parts.join("");
+    const previewPrefix = previewParts.join("");
     const header = isSinglePass ? "" : `### ${subQuestion}\n`;
     const { text } = await generate(
       [
@@ -168,11 +179,19 @@ export async function runResearch(
       ],
       {
         temperature: 0.4,
-        onDelta: (delta) => onDelta?.(prefix + header + delta),
+        // Small models routinely ignore the "2-4 sentences" instruction above
+        // and ramble on for a full essay per sub-question -- capped the same
+        // way the founder-answer/math-instruction fixes stopped trusting
+        // prompt instructions alone (see those comments elsewhere in the
+        // codebase). isSinglePass answers are the whole report, not "one
+        // part" of it, so they keep the engine's normal longer default.
+        maxTokens: isSinglePass ? undefined : SUBANSWER_MAX_TOKENS,
+        onDelta: (delta) => onDelta?.(previewPrefix + delta),
       }
     );
 
     parts.push(`${header}${text}\n\n`);
+    previewParts.push(`${text}\n\n`);
     subAnswers.push({ question: subQuestion, answer: text });
     onSubQuestionDone(i, text);
   }
@@ -189,7 +208,7 @@ export async function runResearch(
     return { transcript: (parts.join("").trim() + sourcesFooter).trim() };
   }
 
-  const prefix = parts.join("");
+  const prefix = previewParts.join("");
   const summaryHeader = "### Summary\n";
   const { text: synthesis } = await generate(
     [

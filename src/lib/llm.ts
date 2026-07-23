@@ -771,7 +771,7 @@ export function recommendModel(
   }
 }
 
-export type ChatOptions = { temperature?: number };
+export type ChatOptions = { temperature?: number; maxTokens?: number };
 
 export async function* streamChat(
   messages: ChatCompletionMessage[],
@@ -815,7 +815,7 @@ function createWebgpuCompletion(
     messages: messages as never,
     stream: true,
     stream_options: { include_usage: true },
-    max_tokens: 768,
+    max_tokens: opts?.maxTokens ?? 768,
     temperature: opts?.temperature ?? 0.5,
     top_p: 0.9,
     repetition_penalty: 1.1,
@@ -875,7 +875,7 @@ async function* streamWasmChat(
     stream: true,
     timings_per_token: true,
     abortSignal: wasmAbortController.signal,
-    max_tokens: 512,
+    max_tokens: opts?.maxTokens ?? 512,
     temp: opts?.temperature ?? 0.5,
     top_p: 0.9,
     min_p: 0.05,
