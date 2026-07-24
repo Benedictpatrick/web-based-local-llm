@@ -23,6 +23,10 @@ export async function extractTextFromFile(file: File): Promise<string> {
   if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
     return extractPdfText(await file.arrayBuffer());
   }
+  if (file.type.startsWith("image/")) {
+    const { extractTextFromImage } = await import("./ocr");
+    return extractTextFromImage(file);
+  }
   return file.text();
 }
 

@@ -7,8 +7,9 @@
     "sync:katex": "node scripts/sync-katex.mjs",
     "sync:pdfjs": "node scripts/sync-pdfjs.mjs",
     "sync:pyodide": "node scripts/sync-pyodide.mjs",
-    "predev": "npm run sync:katex && npm run sync:pdfjs && npm run sync:pyodide",
-    "prebuild": "npm run sync:katex && npm run sync:pdfjs && npm run sync:pyodide",
+    "sync:tesseract": "node scripts/sync-tesseract.mjs",
+    "predev": "npm run sync:katex && npm run sync:pdfjs && npm run sync:pyodide && npm run sync:tesseract",
+    "prebuild": "npm run sync:katex && npm run sync:pdfjs && npm run sync:pyodide && npm run sync:tesseract",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -19,6 +20,7 @@
     "@huggingface/transformers": "^4.2.0",
     "@mlc-ai/web-llm": "^0.2.84",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@wllama/wllama": "^3.5.1",
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
@@ -32,7 +34,8 @@
     "react-syntax-highlighter": "^16.1.1",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0"
+    "remark-math": "^6.0.0",
+    "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
