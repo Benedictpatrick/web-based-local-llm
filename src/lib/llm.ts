@@ -434,11 +434,18 @@ export async function loadEngine(
  *  broken as shipped. Gemma 3 1B's downloaded mlc-chat-config.json sets a
  *  positive sliding_window_size on top of web-llm's own context_window_size
  *  override, and the engine refuses to start with both positive: "Only one
- *  of context_window_size and sliding_window_size can be positive." Forcing
- *  the sliding window off keeps the full context_window_size in effect, per
- *  the fix the error message itself suggests. */
+ *  of context_window_size and sliding_window_size can be positive."
+ *
+ *  Resolve it by dropping *our* context_window_size override instead of the
+ *  model's sliding_window_size: Gemma 3's local/global attention layers are
+ *  compiled expecting the sliding-window KV cache path (engine's
+ *  slidingWindowSize != -1 branch), and disabling it produced gibberish --
+ *  attention math the compiled weights weren't trained/compiled for, not a
+ *  cache-capacity issue. The model's own sliding_window_size still caps
+ *  prompt length (see engine's ContextWindowSizeExceededError, gated on
+ *  slidingWindowSize == -1), so no context limit is lost by removing ours. */
 const CHAT_OPTS_OVERRIDES: Partial<Record<string, WebllmChatOptions>> = {
-  "gemma3-1b-it-q4f16_1-MLC": { sliding_window_size: -1 },
+  "gemma3-1b-it-q4f16_1-MLC": { context_window_size: -1 },
 };
 
 async function loadWebgpuEngine(
@@ -583,6 +590,28 @@ async function loadWasmEngine(
   });
 
   return wllamaLoadingPromise;
+}
+
+/** Forces the next loadEngine() call to do a real rebuild instead of hitting
+ *  the "already loaded" short-circuit at the top of loadWasmEngine/
+ *  loadWebgpuEngine. Needed before recovering from an engine-lost/desynced
+ *  error raised mid-generation: those state guards only see a normal
+ *  `loadedModelId`/`wllama` pair, so without this the "reload" would just
+ *  hand back the same broken engine. Teardown itself intentionally best-
+ *  effort (`.catch(() => {})`): the engine is already known-bad, so a
+ *  failure here shouldn't block the rebuild. */
+export function invalidateEngine(): void {
+  if (wllama) {
+    wllama.exit().catch(() => {});
+    wllama = null;
+  }
+  if (webllmEngine) {
+    webllmEngine.unload().catch(() => {});
+    webllmEngine = null;
+    webllmMlcId = null;
+  }
+  loadedModelId = null;
+  engineKind = null;
 }
 
 export function getLoadedModelId(): ModelId | null {
@@ -802,7 +831,15 @@ export function isEngineLostError(err: unknown): boolean {
   return (
     err.name === "ModelNotLoadedError" ||
     err.name === "DeviceLostError" ||
-    /model not loaded|device.*lost|engine not loaded/i.test(err.message)
+    /model not loaded|device.*lost|engine not loaded/i.test(err.message) ||
+    // wllama's JS<->worker "glue" message framing rejects a message whose
+    // leading bytes don't match its own protocol magic (unrelated to GGUF
+    // file parsing). In practice this only shows up when a new completion
+    // request gets sent to the wasm worker while a prior one is still being
+    // torn down (e.g. the stuck-generation watchdog aborting and immediately
+    // retrying) -- the worker's message stream desyncs. There's no way to
+    // resume a desynced worker, so treat it the same as engine-lost: reload.
+    /invalid magic number/i.test(err.message)
   );
 }
 

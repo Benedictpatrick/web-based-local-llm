@@ -1,5 +1,11 @@
 import type { ChatCompletionMessage } from "@wllama/wllama/esm/index.js";
-import { abortGeneration, isAbortError, isEngineLostError, streamChat } from "./llm";
+import {
+  abortGeneration,
+  invalidateEngine,
+  isAbortError,
+  isEngineLostError,
+  streamChat,
+} from "./llm";
 import { looksGarbled } from "./garbledOutput";
 
 /** How long a generation can go with no new chunk before it's treated as stuck
@@ -90,6 +96,24 @@ export async function generateOnce(
       break;
     } catch (err) {
       clearInterval(watchdog);
+      // Checked before the watchdog-retry branch below: a blind retry posts a
+      // fresh request to the same engine, and if the engine itself is what's
+      // broken (unloaded, lost, or -- for the wasm engine -- its JS<->worker
+      // message stream desynced from the watchdog's own abort-and-retry) that
+      // retry races the still-unwinding prior request instead of recovering
+      // from it. An engine-lost condition always needs a real reload first.
+      if (isEngineLostError(err)) {
+        console.error(err);
+        full =
+          full ||
+          "Your device unloaded the model to free up memory. Reloading it now — please try again in a moment.";
+        // Without this, onEngineLost's reload sees the same loadedModelId/
+        // engine instance it always did and short-circuits back to the same
+        // broken engine instead of rebuilding it.
+        invalidateEngine();
+        opts.onEngineLost?.();
+        break;
+      }
       if (watchdogFired && attempt < MAX_STUCK_RETRIES) {
         continue;
       }
@@ -98,13 +122,7 @@ export async function generateOnce(
         full = full || "Generation stalled — please try again.";
         break;
       }
-      if (isEngineLostError(err)) {
-        console.error(err);
-        full =
-          full ||
-          "Your device unloaded the model to free up memory. Reloading it now — please try again in a moment.";
-        opts.onEngineLost?.();
-      } else if (isAbortError(err)) {
+      if (isAbortError(err)) {
         aborted = true;
         full = full || "Stopped.";
       } else {
