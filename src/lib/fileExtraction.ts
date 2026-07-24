@@ -30,12 +30,24 @@ export async function extractTextFromFile(file: File): Promise<string> {
   return file.text();
 }
 
-export function chunkText(text: string, chunkSize = 600): string[] {
+// Retrieval only ever surfaces the top handful of chunks per question (see
+// topRelevantChunks' k), so embedding every chunk of a large PDF (up to
+// MAX_PDF_PAGES pages) was pure wasted latency -- each chunk is one on-device
+// model inference call, and a large document could queue up hundreds of them
+// before the file even finished "attaching". MAX_CHUNKS bounds the worst
+// case; chunkSize was bumped from 600 toward (but staying under) all-MiniLM-
+// L6-v2's ~256-token window, so fewer, fuller chunks cover the same text
+// instead of slicing it more finely than the model even uses -- kept short of
+// the actual limit so a chunk's embedding doesn't quietly stop reflecting its
+// own tail.
+const MAX_CHUNKS = 150;
+
+export function chunkText(text: string, chunkSize = 800): string[] {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (!normalized) return [];
 
   const chunks: string[] = [];
-  for (let i = 0; i < normalized.length; i += chunkSize) {
+  for (let i = 0; i < normalized.length && chunks.length < MAX_CHUNKS; i += chunkSize) {
     chunks.push(normalized.slice(i, i + chunkSize));
   }
   return chunks;
