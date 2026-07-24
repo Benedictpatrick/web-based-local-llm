@@ -154,6 +154,31 @@ body {
   }
 }
 
+/* Composer send/stop button while a reply is streaming: an expanding ring
+ * that fades out, looping continuously -- signals "working" the same way
+ * ChatGPT's stop button pulses, so the button doesn't just sit there static
+ * while tokens are streaming above it. */
+@keyframes stop-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.stop-pulse-ring {
+  animation: stop-pulse-ring 1.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stop-pulse-ring {
+    animation: none;
+  }
+}
+
 .tab-switcher {
   background: color-mix(in srgb, var(--foreground) 6%, transparent);
 }

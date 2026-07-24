@@ -1555,18 +1555,39 @@ export default function Chat({
                     />
                   </svg>
                 </button>
-                <button
-                  aria-label={streaming ? "Stop" : "Send"}
-                  className="glass-sheen flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-30 sm:h-9 sm:w-9"
-                  onClick={streaming ? handleStop : handleSend}
-                  disabled={!streaming && !input.trim()}
-                >
-                  {streaming ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <div className="relative shrink-0">
+                  {streaming && (
+                    <span
+                      aria-hidden
+                      className="stop-pulse-ring pointer-events-none absolute inset-0 rounded-full bg-accent"
+                    />
+                  )}
+                  <button
+                    aria-label={streaming ? "Stop" : "Send"}
+                    className="glass-sheen relative flex h-10 w-10 items-center justify-center rounded-full bg-accent text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-30 sm:h-9 sm:w-9"
+                    onClick={streaming ? handleStop : handleSend}
+                    disabled={!streaming && !input.trim()}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className={`absolute transition-all duration-200 ${
+                        streaming ? "scale-100 opacity-100" : "scale-50 opacity-0"
+                      }`}
+                    >
                       <rect x="5" y="5" width="14" height="14" rx="2" />
                     </svg>
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className={`absolute transition-all duration-200 ${
+                        streaming ? "scale-50 opacity-0" : "scale-100 opacity-100"
+                      }`}
+                    >
                       <path
                         d="M12 19V5M12 5L5 12M12 5L19 12"
                         stroke="currentColor"
@@ -1575,8 +1596,8 @@ export default function Chat({
                         strokeLinejoin="round"
                       />
                     </svg>
-                  )}
-                </button>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
